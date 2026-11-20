@@ -1,0 +1,16 @@
+{
+  "name": "homebridge-milight-remote",
+  "version": "2.0.4",
+  "description": "MiBoxer / Mi-Light Dual-Radio 2.4GHz Remote Studio, Real-World Mapper & 3D Cutaway Smart Home Twin",
+  "main": "index.js",
+  "keywords": [
+    "homebridge-plugin"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "homebridge": ">=1.6.0 || ^2.0.0"
+  },
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.1.0"
+  }
+}

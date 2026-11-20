@@ -1,0 +1,66 @@
+{
+  "pluginAlias": "MiLightRemotePlatform",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "customUiPath": "./homebridge-ui",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "MiLight Remotes"
+      },
+      "mqttHost": {
+        "title": "MQTT Broker Host",
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "mqttPort": {
+        "title": "MQTT Broker Port",
+        "type": "integer",
+        "default": 1883
+      },
+      "hubUrl": {
+        "title": "ESP32 Mi-Light Hub URL",
+        "type": "string",
+        "default": "http://192.168.7.121"
+      },
+      "exposureMode": {
+        "title": "HomeKit Exposure Mode",
+        "type": "string",
+        "default": "none",
+        "oneOf": [
+          {
+            "title": "Hidden / Clean UI (3D Twin & Real-World Mapper Only)",
+            "enum": [
+              "none"
+            ]
+          },
+          {
+            "title": "Stateless Programmable Buttons (Apple Home Automations)",
+            "enum": [
+              "stateless"
+            ]
+          }
+        ]
+      },
+      "enableSmartHomeTwin": {
+        "title": "Enable 3D Smart Home Twin",
+        "type": "boolean",
+        "default": true
+      },
+      "twinPort": {
+        "title": "3D Smart Home HTTP Port",
+        "type": "integer",
+        "default": 8588
+      },
+      "haDiscovery": {
+        "title": "Publish Home Assistant Auto-Discovery",
+        "type": "boolean",
+        "default": true
+      }
+    }
+  }
+}
