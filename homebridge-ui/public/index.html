@@ -76,6 +76,13 @@
   #m3dToast { position:absolute; bottom:10px; left:10px; right:10px; background:rgba(255,255,255,.95); color:var(--text); padding:8px 13px; border-radius:8px; border:1px solid var(--border-strong); box-shadow:0 4px 12px rgba(15,23,42,.1); font-size:12.5px; z-index:7; pointer-events:none; }
   #m3dToast.toast-active { border-color:var(--hb-orange); }
   details.cfg-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-top:12px; }
+  .mbx-seg-hit { cursor:pointer; transition:fill .15s ease, filter .15s ease; }
+  .mbx-seg-hit:hover { fill:rgba(2,132,199,.28)!important; }
+  .mbx-seg-hit.fire-rf { fill:rgba(34,197,94,.68)!important; stroke:#15803d!important; stroke-width:2.8px!important; }
+  .mbx-seg-hit.fire-ui { fill:rgba(245,158,11,.68)!important; stroke:#d97706!important; stroke-width:2.8px!important; }
+  .hb-modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.62); backdrop-filter:blur(3px); z-index:999; display:none; align-items:center; justify-content:center; padding:14px; }
+  .hb-modal-bg.open { display:flex; }
+  .hb-modal { background:var(--card, #fff); color:var(--text, #0f172a); border:1px solid var(--border); border-radius:12px; max-width:780px; width:100%; max-height:90vh; overflow-y:auto; padding:18px; box-shadow:0 18px 45px rgba(0,0,0,.35); }
 </style>
 </head>
 <body>
@@ -132,7 +139,7 @@
       <div class="grid-3">
         <div><label>1. When Remote</label><select id="rwRemote"></select></div>
         <div><label>2. On Zone</label><select id="rwZone"><option value="*">Any Zone (*)</option><option value="0">Zone 0 (Master)</option><option value="1" selected>Zone 1</option><option value="2">Zone 2</option><option value="3">Zone 3</option><option value="4">Zone 4</option><option value="5">Zone 5</option><option value="6">Zone 6</option><option value="7">Zone 7</option><option value="8">Zone 8</option></select></div>
-        <div><label>3. Sends Button / Slider</label><select id="rwControl"><option value="on">ON (Short Press)</option><option value="on_double">ON (2x Double Tap)</option><option value="on_triple">ON (3x Triple Tap)</option><option value="off">OFF (Short Press)</option><option value="off_double">OFF (2x Double Tap)</option><option value="night_mode">Hold OFF (Long Press / Night)</option><option value="brightness">Brightness Slider</option><option value="hue">Color Wheel (Hue)</option><option value="color_temp">CCT Slider</option><option value="saturation">Saturation Slider</option><option value="set_white">W (White)</option><option value="mode">M (Mode)</option><option value="mode_speed_up">S+ (Short Press)</option><option value="mode_speed_up_double">S+ (2x Double Tap)</option><option value="mode_speed_up_triple">S+ (3x Triple Tap)</option><option value="mode_speed_down">S- (Multi-Function / Speed-)</option><option value="night_mode">Hold OFF (Night Mode)</option><option value="*">Any Button/Slider</option></select></div>
+        <div><label>3. Sends Button / Slider</label><select id="rwControl"><option value="on">ON (Short Press)</option><option value="on_double">ON (2x Double Tap)</option><option value="on_triple">ON (3x Triple Tap)</option><option value="off">OFF (Short Press)</option><option value="off_double">OFF (2x Double Tap)</option><option value="night_mode">Hold OFF (Long Press / Night)</option><option value="brightness">Brightness Slider</option><option value="hue">Color Wheel (Hue)</option><option value="color_temp">CCT Slider</option><option value="saturation">Saturation Slider</option><option value="set_white">W (White)</option><option value="mode">M (Mode)</option><option value="mode_speed_up">S+ (Short Press)</option><option value="mode_speed_up_double">S+ (2x Double Tap)</option><option value="mode_speed_up_triple">S+ (3x Triple Tap)</option><option value="mode_speed_down">S- (Multi-Function / Speed-)</option><option value="night_mode">Hold OFF (Night Mode)</option><option value="hue_seg_1">Color Wheel Slice #1</option><option value="hue_seg_2">Color Wheel Slice #2</option><option value="hue_seg_3">Color Wheel Slice #3</option><option value="hue_seg_4">Color Wheel Slice #4</option><option value="hue_seg_5">Color Wheel Slice #5</option><option value="hue_seg_6">Color Wheel Slice #6</option><option value="hue_seg_7">Color Wheel Slice #7</option><option value="hue_seg_8">Color Wheel Slice #8</option><option value="cct_seg_1">CCT Bar Slot #1</option><option value="cct_seg_2">CCT Bar Slot #2</option><option value="cct_seg_3">CCT Bar Slot #3</option><option value="cct_seg_4">CCT Bar Slot #4</option><option value="sat_seg_1">Sat Bar Slot #1</option><option value="sat_seg_2">Sat Bar Slot #2</option><option value="sat_seg_3">Sat Bar Slot #3</option><option value="sat_seg_4">Sat Bar Slot #4</option><option value="bri_seg_1">Bri Bar Slot #1</option><option value="bri_seg_2">Bri Bar Slot #2</option><option value="bri_seg_3">Bri Bar Slot #3</option><option value="bri_seg_4">Bri Bar Slot #4</option><option value="*">Any Button/Slider</option></select></div>
       </div>
       <div class="grid-2" style="margin-top:10px">
         <div><label>4. Target Integration Type</label><select id="rwTargetType" onchange="renderRwTargetFields()"><option value="homebridge_hap">🏠 Real Homebridge Device</option><option value="mqtt">📡 Custom MQTT Topic</option><option value="webhook">🌐 HTTP Webhook</option><option value="ha_event">🔷 Home Assistant Trigger Event</option></select></div>
@@ -194,13 +201,73 @@
   <div id="cfgStatus" style="margin-top:8px;font-size:11.5px;color:var(--rf);font-weight:700"></div>
 </details>
 
+<div class="hb-modal-bg" id="hbMacroModal">
+  <div class="hb-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:15px;font-weight:800" id="hbmTitle">Gestures &amp; Segmented Ring / Slider Configurator</div>
+        <div style="font-size:11.5px;color:var(--muted)">Two-way synced with ESP32 Mi-Light Hub &amp; MQTT Discovery</div>
+      </div>
+      <button type="button" class="btn" onclick="closeHbMacroModal()">Close</button>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div style="font-weight:800;font-size:12.5px">1. Button Multi-Tap &amp; Hold Gestures (Enable / Disable)</div>
+        <div style="font-size:11.5px;display:flex;align-items:center;gap:6px">Multi-Tap Window (ms): <input id="hbmWinMs" type="number" min="180" max="750" step="20" value="360" style="width:72px;padding:3px 6px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;font-size:12px">
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="hbmShort" checked> Short Press (1x)</label>
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="hbmLong" checked> Long Press (Hold)</label>
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="hbmDouble"> Double Tap (2x)</label>
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="hbmTriple"> Triple Tap (3x)</label>
+      </div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-weight:800;font-size:12.5px;margin-bottom:8px">2. Divide Color Wheel &amp; Sliders into Action Buttons</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="hbmSurfTabs">
+        <button type="button" class="tab-btn active" onclick="selectHbmSurf('hue_ring')">🎨 Color Wheel</button>
+        <button type="button" class="tab-btn" onclick="selectHbmSurf('cct_bar')">🌡️ CCT Temp Bar</button>
+        <button type="button" class="tab-btn" onclick="selectHbmSurf('sat_bar')">💧 Saturation Bar</button>
+        <button type="button" class="tab-btn" onclick="selectHbmSurf('bri_bar')">☀️ Brightness Bar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:center">
+        <div id="hbmPreview" style="display:flex;align-items:center;justify-content:center;min-height:185px;border:1px solid var(--border);border-radius:8px;padding:8px"></div>
+        <div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:12.5px;margin-bottom:8px">
+            <input type="checkbox" id="hbmSurfEn" onchange="onHbmSurfChange()"> Enable Segmented Action Buttons on this Surface
+          </label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <div style="flex:1;min-width:140px">
+              <label style="font-size:11.5px">Divisions: <b id="hbmSegCountLbl">6</b></label>
+              <input type="range" id="hbmSegRange" min="2" max="12" value="6" oninput="onHbmSurfChange()" style="width:100%">
+            </div>
+            <div id="hbmOffsetWrap" style="display:flex;gap:4px">
+              <button type="button" class="btn" onclick="setHbmTopCenter()">Center #1 Top</button>
+              <button type="button" class="btn" onclick="setHbmZeroSplit()">0° Split</button>
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:700;margin-bottom:4px">Active Zones:</div>
+            <div id="hbmZonePills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;margin-bottom:4px">Custom Button Labels:</div>
+          <div id="hbmLabelsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button type="button" class="btn" onclick="closeHbMacroModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveHbMacroModal()">Save &amp; Sync to ESP32 Hub</button>
+    </div>
+  </div>
+</div>
 <script src="./miboxer_catalog.js"></script>
 <script src="./three.min.js"></script>
 <script>
 const isStandalone8588 = !window.homebridge;
 const apiReq = async (route, body) => {
   if (window.homebridge) return homebridge.request(route, body);
-  const map = { '/twin-state':'/api/state', '/routing-get':'/api/routing', '/routing-save':'/api/routing', '/routing-reset':'/api/routing/reset_defaults', '/real-devices':'/api/real_devices', '/test-rule':'/api/test_rule', '/twin-cmd':'/api/command', '/virtual-send':'/api/virtual_send' };
+  const map = { '/twin-state':'/api/state', '/routing-get':'/api/routing', '/routing-save':'/api/routing', '/routing-reset':'/api/routing/reset_defaults', '/real-devices':'/api/real_devices', '/test-rule':'/api/test_rule', '/twin-cmd':'/api/command', '/virtual-send':'/api/virtual_send', '/remote-upsert':'/api/remotes' };
   const url = map[route] || route;
   const r = await fetch(url, body ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : undefined);
   return r.json();
@@ -346,7 +413,7 @@ function renderRemotesGrid() {
     const curZ = activeZoneByDev[devId];
     const zBtns = [0,...Array.from({length:maxZ},(_,i)=>i+1)].map((z)=>`<button type="button" class="zpill ${curZ===z?'active':''}" id="zp_${devId}_${z}" onclick="selectZone(${devId},${z})">${z===0?'All':'Z'+z}</button>`).join('');
     return `<div class="rcard" id="rcard_${devId}">
-      <div class="rcard-hdr"><div><div class="rcard-title">${r.name||vm}</div><div class="rcard-sub">${vm} • ${hex} • ${r.remote_type||'fut089'}</div></div><span class="src-pill" id="spill_${devId}">READY</span></div>
+      <div class="rcard-hdr"><div><div class="rcard-title">${r.name||vm}</div><div class="rcard-sub">${vm} • ${hex} • ${r.remote_type||'fut089'}</div></div><div style="display:flex;gap:4px;align-items:center"><button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="openHbMacroModal(${devId})">🎛️ Zones/Taps</button><span class="src-pill" id="spill_${devId}">READY</span></div></div>
       <div class="zpills" id="zpills_${devId}">${zBtns}</div>
       <div class="ztarget-hint" id="zhint_${devId}">&rarr; ${lookupTargetLabel(hex, curZ)}</div>
       <div class="svg-stage" id="stage_${devId}"></div>
@@ -361,8 +428,9 @@ function mountSvgInto(elId, r, uid) {
   const devId = getDevId(r), vm = r.visual_model || r.model || '', rtype = r.remote_type || 'fut089';
   const mod = MiBoxerCatalog.MODELS.find((m)=>m.id===vm) || MiBoxerCatalog.MODELS.find((m)=>m.proto===rtype) || MiBoxerCatalog.MODELS[0];
   box.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid });
-  const curZ = String(activeZoneByDev[devId] ?? 1);
+  const curZ = Number(activeZoneByDev[devId] ?? 1);
   box.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el)=>el.classList.add('zone-active'));
+  renderSvgSegmentOverlays(box, r, devId, rtype, curZ);
   box.querySelectorAll('.mbx-hit').forEach((el) => {
     let holdT = null, heldFired = false;
     el.onpointerdown = (e) => {
@@ -427,6 +495,8 @@ function renderModal3DRemoteDock() {
 
 function pulseHits(container, act, zone, cls) {
   if (!container) return;
+  const segHits = container.querySelectorAll(`.mbx-seg-hit[data-seg-act="${act}"]`);
+  if (segHits.length) segHits.forEach((el) => { el.classList.remove('fire-rf','fire-ui'); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 800); });
   const acts = ACT_TO_SVG[act] || [act];
   acts.forEach((a) => container.querySelectorAll(`.mbx-hit[data-act="${a}"]`).forEach((el) => {
     el.classList.remove('fire-rf','fire-ui'); void el.offsetWidth; el.classList.add(cls);
@@ -549,7 +619,7 @@ async function pollLoop() {
       if (lastSeenSeq === -1) { lastSeenSeq = Number(j.seq); return; }
       if (Number(j.seq) <= lastSeenSeq) return;
       lastSeenSeq = Number(j.seq);
-      const devId = Number(j.device_id || j.id || 0), z = Number(j.group_id ?? 0), act = String(j.action || '').toLowerCase();
+      const devId = Number(j.device_id || j.id || 0), z = Number(j.group_id ?? 0), gest = String(j.gesture || 'single').toLowerCase(), rawAct = String(j.action || '').toLowerCase(), act = (gest === 'double' || gest === 'triple') ? `${rawAct}_${gest}` : rawAct;
       if (learnModeActive && j.source !== 'virtual') {
         document.getElementById('rwRemote').value = getHex(devId); document.getElementById('rwZone').value = String(z);
         if ([...document.getElementById('rwControl').options].some((o)=>o.value===act)) document.getElementById('rwControl').value = act;
@@ -561,6 +631,170 @@ async function pollLoop() {
   } catch (_) {}
 }
 
+
+
+const HB_SVG_NS = 'http://www.w3.org/2000/svg';
+function hbPolar(cx, cy, r, deg) { const rad = ((deg - 90) * Math.PI) / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+function hbWedgePath(cx, cy, rIn, rOut, sDeg, eDeg) {
+  const p1 = hbPolar(cx, cy, rOut, sDeg), p2 = hbPolar(cx, cy, rOut, eDeg), p3 = hbPolar(cx, cy, rIn, eDeg), p4 = hbPolar(cx, cy, rIn, sDeg);
+  const lg = (eDeg - sDeg) > 180 ? 1 : 0;
+  return `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} A ${rOut.toFixed(1)} ${rOut.toFixed(1)} 0 ${lg} 1 ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)} A ${rIn.toFixed(1)} ${rIn.toFixed(1)} 0 ${lg} 0 ${p4.x.toFixed(1)} ${p4.y.toFixed(1)} Z`;
+}
+function normHbTouchZones(tz) {
+  const def = (n, p) => ({ enabled:false, segments:n, offset_deg:0, zone_mask:0xFFFF, labels:Array.from({length:n},(_,i)=>`${p} ${i+1}`) });
+  return {
+    hue_ring: Object.assign(def(6, 'Slice'), (tz && tz.hue_ring) || {}),
+    cct_bar:  Object.assign(def(4, 'CCT'),   (tz && tz.cct_bar)  || {}),
+    sat_bar:  Object.assign(def(4, 'Sat'),   (tz && tz.sat_bar)  || {}),
+    bri_bar:  Object.assign(def(4, 'Bri'),   (tz && tz.bri_bar)  || {})
+  };
+}
+function renderSvgSegmentOverlays(box, r, devId, rtype, curZ) {
+  const svgEl = box.querySelector('svg');
+  if (!svgEl || !r || !r.touch_zones) return;
+  const tz = normHbTouchZones(r.touch_zones);
+  const zBit = curZ < 16 ? (1 << curZ) : 0x8000;
+  if (tz.hue_ring.enabled && ((tz.hue_ring.zone_mask ?? 0xFFFF) & zBit)) {
+    const hueEl = svgEl.querySelector('.mbx-hit[data-act="hue"]');
+    if (hueEl && hueEl.getBBox) {
+      const bb = hueEl.getBBox();
+      if (bb.width > 0) {
+        const cx = bb.x + bb.width/2, cy = bb.y + bb.height/2, rOut = Math.max(bb.width, bb.height)/2, rIn = rOut * 0.52;
+        const n = Math.min(12, Math.max(2, Number(tz.hue_ring.segments)||6)), span = 360 / n, off = Number(tz.hue_ring.offset_deg||0);
+        const g = document.createElementNS(HB_SVG_NS, 'g');
+        for (let i = 0; i < n; i++) {
+          const sD = off + i * span, eD = sD + span, segAct = `hue_seg_${i+1}`, lbl = (tz.hue_ring.labels||[])[i] || `Slice ${i+1}`;
+          const p = document.createElementNS(HB_SVG_NS, 'path');
+          p.setAttribute('d', hbWedgePath(cx, cy, rIn, rOut, sD, eD));
+          p.setAttribute('fill', 'rgba(15,23,42,0.16)'); p.setAttribute('stroke', '#0f172a'); p.setAttribute('stroke-width', '1.5');
+          p.setAttribute('class', 'mbx-seg-hit'); p.setAttribute('data-seg-act', segAct);
+          const t = document.createElementNS(HB_SVG_NS, 'title'); t.textContent = `#${i+1}: ${lbl} (${segAct})`; p.appendChild(t);
+          p.onclick = (ev) => { ev.stopPropagation(); localUiSuppress[`${devId}:${curZ}`] = Date.now(); triggerVisualFeedback(devId, segAct, curZ, 'ui', i+1); apiReq('/virtual-send', { device_id:devId, remote_type:rtype, group_id:curZ, action:segAct, value:i+1 }); };
+          g.appendChild(p);
+          const lp = hbPolar(cx, cy, (rIn+rOut)/2, sD + span/2);
+          const tx = document.createElementNS(HB_SVG_NS, 'text');
+          tx.setAttribute('x', lp.x.toFixed(1)); tx.setAttribute('y', (lp.y+3).toFixed(1)); tx.setAttribute('text-anchor', 'middle');
+          tx.setAttribute('font-size', '8.5'); tx.setAttribute('font-weight', '800'); tx.setAttribute('fill', '#fff'); tx.setAttribute('pointer-events', 'none');
+          tx.textContent = String(i+1); g.appendChild(tx);
+        }
+        hueEl.parentNode.appendChild(g);
+      }
+    }
+  }
+  [['.mbx-hit[data-act="kelvin"]', tz.cct_bar, 'cct_seg_'], ['.mbx-hit[data-act="saturation"]', tz.sat_bar, 'sat_seg_'], ['.mbx-hit[data-act="brightness"]', tz.bri_bar, 'bri_seg_']].forEach(([sel, sc, pref]) => {
+    if (!sc.enabled || !((sc.zone_mask ?? 0xFFFF) & zBit)) return;
+    const barEl = svgEl.querySelector(sel);
+    if (!barEl || !barEl.getBBox) return;
+    const bb = barEl.getBBox(); if (!bb.width) return;
+    const n = Math.min(6, Math.max(2, Number(sc.segments)||4)), vert = bb.height > bb.width * 1.3;
+    const g = document.createElementNS(HB_SVG_NS, 'g');
+    for (let i = 0; i < n; i++) {
+      const iv = vert ? (n - 1 - i) : i;
+      const rx = vert ? bb.x : bb.x + (iv * bb.width)/n, ry = vert ? bb.y + (iv * bb.height)/n : bb.y;
+      const rw = vert ? bb.width : bb.width/n, rh = vert ? bb.height/n : bb.height;
+      const segAct = `${pref}${i+1}`, lbl = (sc.labels||[])[i] || `Slot ${i+1}`;
+      const rc = document.createElementNS(HB_SVG_NS, 'rect');
+      rc.setAttribute('x', rx.toFixed(1)); rc.setAttribute('y', ry.toFixed(1)); rc.setAttribute('width', rw.toFixed(1)); rc.setAttribute('height', rh.toFixed(1));
+      rc.setAttribute('rx', '3'); rc.setAttribute('fill', 'rgba(2,132,199,0.18)'); rc.setAttribute('stroke', '#0284c7'); rc.setAttribute('stroke-width', '1.4');
+      rc.setAttribute('class', 'mbx-seg-hit'); rc.setAttribute('data-seg-act', segAct);
+      const t = document.createElementNS(HB_SVG_NS, 'title'); t.textContent = `#${i+1}: ${lbl} (${segAct})`; rc.appendChild(t);
+      rc.onclick = (ev) => { ev.stopPropagation(); localUiSuppress[`${devId}:${curZ}`] = Date.now(); triggerVisualFeedback(devId, segAct, curZ, 'ui', i+1); apiReq('/virtual-send', { device_id:devId, remote_type:rtype, group_id:curZ, action:segAct, value:i+1 }); };
+      g.appendChild(rc);
+    }
+    barEl.parentNode.appendChild(g);
+  });
+}
+
+let hbmDevId = null, hbmSurf = 'hue_ring', hbmTouch = null;
+function openHbMacroModal(devId) {
+  const r = remotes.find((x) => getDevId(x) === Number(devId));
+  if (!r) return;
+  hbmDevId = Number(devId);
+  const g = r.gestures || { short:true, long:true, double:false, triple:false, window_ms:360 };
+  document.getElementById('hbmTitle').textContent = `Gestures & Touch Zones — ${r.name || getHex(devId)}`;
+  document.getElementById('hbmShort').checked = g.short !== false;
+  document.getElementById('hbmLong').checked = g.long !== false;
+  document.getElementById('hbmDouble').checked = Boolean(g.double);
+  document.getElementById('hbmTriple').checked = Boolean(g.triple);
+  document.getElementById('hbmWinMs').value = g.window_ms || 360;
+  hbmTouch = normHbTouchZones(r.touch_zones);
+  hbmSurf = (r.remote_type === 'fut091' || r.remote_type === 'cct') ? 'cct_bar' : 'hue_ring';
+  renderHbmSurfaceEditor();
+  document.getElementById('hbMacroModal').classList.add('open');
+}
+function closeHbMacroModal() { document.getElementById('hbMacroModal').classList.remove('open'); }
+function selectHbmSurf(s) { hbmSurf = s; renderHbmSurfaceEditor(); }
+function setHbmTopCenter() { if (!hbmTouch) return; hbmTouch.hue_ring.offset_deg = -Math.round(180 / hbmTouch.hue_ring.segments); renderHbmSurfaceEditor(); }
+function setHbmZeroSplit() { if (!hbmTouch) return; hbmTouch.hue_ring.offset_deg = 0; renderHbmSurfaceEditor(); }
+function onHbmSurfChange() {
+  if (!hbmTouch) return;
+  const sc = hbmTouch[hbmSurf];
+  sc.enabled = document.getElementById('hbmSurfEn').checked;
+  sc.segments = Number(document.getElementById('hbmSegRange').value);
+  while (sc.labels.length < sc.segments) sc.labels.push(`${hbmSurf==='hue_ring'?'Slice':'Slot'} ${sc.labels.length+1}`);
+  sc.labels = sc.labels.slice(0, sc.segments);
+  renderHbmSurfaceEditor();
+}
+function renderHbmSurfaceEditor() {
+  const r = remotes.find((x) => getDevId(x) === hbmDevId);
+  if (!r || !hbmTouch) return;
+  const sc = hbmTouch[hbmSurf];
+  const btns = document.querySelectorAll('#hbmSurfTabs .tab-btn');
+  ['hue_ring','cct_bar','sat_bar','bri_bar'].forEach((k, idx) => { if (btns[idx]) btns[idx].classList.toggle('active', k === hbmSurf); });
+  document.getElementById('hbmSurfEn').checked = Boolean(sc.enabled);
+  const rng = document.getElementById('hbmSegRange');
+  rng.max = hbmSurf === 'hue_ring' ? 12 : 6; rng.value = sc.segments;
+  document.getElementById('hbmSegCountLbl').textContent = String(sc.segments);
+  document.getElementById('hbmOffsetWrap').style.display = hbmSurf === 'hue_ring' ? 'flex' : 'none';
+  const maxZ = Math.min(8, Math.max(1, Number(r.num_zones||8)));
+  document.getElementById('hbmZonePills').innerHTML = [0, ...Array.from({length:maxZ},(_,i)=>i+1)].map((z) => {
+    const bit = 1 << z, on = ((sc.zone_mask ?? 0xFFFF) & bit) !== 0;
+    return `<button type="button" class="zpill ${on?'active':''}" onclick="hbmTouch['${hbmSurf}'].zone_mask ^= ${bit};renderHbmSurfaceEditor()">${z===0?'Z0':'Z'+z}</button>`;
+  }).join('');
+  document.getElementById('hbmLabelsGrid').innerHTML = Array.from({length:sc.segments}, (_, i) =>
+    `<div style="display:flex;align-items:center;gap:4px"><b style="font-size:11px">#${i+1}</b><input value="${(sc.labels[i]||'').replace(/"/g,'&quot;')}" oninput="hbmTouch['${hbmSurf}'].labels[${i}]=this.value" style="padding:4px 6px;font-size:11.5px"></div>`
+  ).join('');
+  const pv = document.getElementById('hbmPreview');
+  if (hbmSurf === 'hue_ring') {
+    const span = 360 / sc.segments, off = sc.offset_deg || 0;
+    const slices = Array.from({length:sc.segments}, (_, i) => {
+      const sD = off + i*span, eD = sD + span, col = sc.enabled ? `hsl(${Math.round(((sD+span/2)%360+360)%360)},82%,52%)` : '#94a3b8';
+      const lp = hbPolar(90, 90, 62, sD + span/2);
+      return `<path d="${hbWedgePath(90,90,44,80,sD,eD)}" fill="${col}" fill-opacity="${sc.enabled?0.88:0.28}" stroke="#0f172a" stroke-width="1.8"/><text x="${lp.x.toFixed(1)}" y="${(lp.y+4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${i+1}</text>`;
+    }).join('');
+    pv.innerHTML = `<svg viewBox="0 0 180 180" width="170" height="170">${slices}<circle cx="90" cy="90" r="40" fill="#fff"/><text x="90" y="93" text-anchor="middle" font-size="11" font-weight="800" fill="#0f172a">${sc.enabled?sc.segments+' Slices':'Continuous'}</text></svg>`;
+  } else {
+    const w = 160 / sc.segments;
+    const bars = Array.from({length:sc.segments}, (_, i) => `<rect x="${10+i*w+2}" y="20" width="${w-4}" height="40" rx="5" fill="${sc.enabled?'#0284c7':'#94a3b8'}" fill-opacity="${sc.enabled?0.88:0.3}" stroke="#0f172a"/><text x="${10+i*w+w/2}" y="44" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">#${i+1}</text>`).join('');
+    pv.innerHTML = `<svg viewBox="0 0 180 80" width="175" height="80">${bars}</svg>`;
+  }
+}
+async function saveHbMacroModal() {
+  const r = remotes.find((x) => getDevId(x) === hbmDevId);
+  if (!r || !hbmTouch) return;
+  const payload = {
+    device_id: hbmDevId,
+    remote_type: r.remote_type || 'fut089',
+    visual_model: r.visual_model || r.model || 'FUT089',
+    name: r.name || getHex(hbmDevId),
+    topic_prefix: r.topic_prefix || r.prefix || `milight/actions/rem_${hbmDevId.toString(16).toLowerCase()}`,
+    num_zones: Number(r.num_zones || r.zones || 8),
+    active: true,
+    gestures: {
+      short: document.getElementById('hbmShort').checked,
+      long: document.getElementById('hbmLong').checked,
+      double: document.getElementById('hbmDouble').checked,
+      triple: document.getElementById('hbmTriple').checked,
+      window_ms: Number(document.getElementById('hbmWinMs').value) || 360
+    },
+    touch_zones: hbmTouch
+  };
+  await apiReq('/remote-upsert', payload);
+  Object.assign(r, payload);
+  closeHbMacroModal();
+  renderRemotesGrid();
+  renderModal3DRemoteDock();
+}
 
 function createCutawaySmartHome3D(opts) {
   const vp = opts.viewport;

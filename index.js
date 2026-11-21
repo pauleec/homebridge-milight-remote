@@ -123,10 +123,14 @@ class MiLightRemotePlatform {
     const z = Number(m[2]);
     let data = {};
     try { data = JSON.parse(payload); } catch (_) {}
-    const act = String(data.action || '').toLowerCase();
+    const act = String(data.gesture_action || data.action || '').toLowerCase();
+    const gest = String(data.gesture || 'single').toLowerCase();
     const C = this.api.hap.Characteristic, S = this.api.hap.Service;
-    const hkEvent = act === 'off' || act === 'night_mode' ? C.ProgrammableSwitchEvent.LONG_PRESS
-                  : (act === 'set_white' || act === 'mode' ? C.ProgrammableSwitchEvent.DOUBLE_PRESS : C.ProgrammableSwitchEvent.SINGLE_PRESS);
+    const hkEvent = (gest === 'long' || act === 'night_mode')
+      ? C.ProgrammableSwitchEvent.LONG_PRESS
+      : (gest === 'double' || gest === 'triple' || act.endsWith('_double') || act === 'set_white' || act === 'mode')
+      ? C.ProgrammableSwitchEvent.DOUBLE_PRESS
+      : C.ProgrammableSwitchEvent.SINGLE_PRESS;
     const sw = entry.acc.getServiceById(S.StatelessProgrammableSwitch, `zone-${z}`);
     if (sw) sw.getCharacteristic(C.ProgrammableSwitchEvent).updateValue(hkEvent);
   }

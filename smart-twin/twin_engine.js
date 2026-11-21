@@ -219,8 +219,10 @@ class SmartHomeTwinEngine extends EventEmitter {
       this.remotesByPrefix.set(prefix, {
         device_id: devId, hex_id: hex, hex, visual_model: model, model,
         remote_type: String(m.remote_type || m.type || 'fut089'),
-        name: m.name || `${model} (${hex})`, prefix,
-        num_zones: Number(m.num_zones ?? m.zones ?? 8), zones: Number(m.num_zones ?? m.zones ?? 8)
+        name: m.name || `${model} (${hex})`, topic_prefix: prefix, prefix,
+        num_zones: Number(m.num_zones ?? m.zones ?? 8), zones: Number(m.num_zones ?? m.zones ?? 8),
+        gestures: m.gestures || { short: true, long: true, double: false, triple: false, window_ms: 360 },
+        touch_zones: m.touch_zones || {}
       });
       this.mqtt.subscribe(`${prefix}/zone/+/event`);
     } catch (_) {}
@@ -256,25 +258,48 @@ class SmartHomeTwinEngine extends EventEmitter {
     const normAct = (act === 'level') ? 'brightness' : act;
     const normPct = (normAct === 'brightness' && effVal !== undefined) ? sliderToFullPct(effVal, srcKind, is100Scale) : undefined;
 
-    // Hardware Long-Press signals (night_mode = Hold OFF, set_white on rgb_cct = Hold ON)
-    if (normAct === 'night_mode') {
+    const hubGesture = data.gesture ? String(data.gesture).toLowerCase() : null;
+    const extraMeta = {
+      segment: data.segment ? Number(data.segment) : 0,
+      segmentsTotal: data.segments_total ? Number(data.segments_total) : 0,
+      label: data.label ? String(data.label) : ''
+    };
+
+    // If ESP32 Hub Stage 3A already classified gesture or segmented slice/slot, dispatch immediately!
+    if (hubGesture || /^(hue|cct|sat|bri)_seg_\d+$/.test(normAct)) {
       const pendOff = this.tapTrackers.get(`${rem.hex}:${z}:off`);
-      if (pendOff && pendOff.timer) { clearTimeout(pendOff.timer); this.tapTrackers.delete(`${rem.hex}:${z}:off`); }
-      this._dispatchClassifiedEvent(rem, z, 'night_mode', val, normPct, srcKind, 'long', topic);
+      if (normAct === 'night_mode' && pendOff && pendOff.timer) {
+        clearTimeout(pendOff.timer);
+        this.tapTrackers.delete(`${rem.hex}:${z}:off`);
+      }
+      this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, hubGesture || 'single', topic, extraMeta);
       return;
     }
 
-    // Multi-tap eligible discrete buttons: on, off, mode_speed_up (S+), mode_speed_down (S-), set_white
+    // Fallback local classifier for older Hub firmware without data.gesture
+    const gCfg = rem.gestures || { short: true, long: true, double: false, triple: false, window_ms: 360 };
+    if (normAct === 'night_mode') {
+      const pendOff = this.tapTrackers.get(`${rem.hex}:${z}:off`);
+      if (pendOff && pendOff.timer) { clearTimeout(pendOff.timer); this.tapTrackers.delete(`${rem.hex}:${z}:off`); }
+      if (gCfg.long === false) return;
+      this._dispatchClassifiedEvent(rem, z, 'night_mode', val, normPct, srcKind, 'long', topic, extraMeta);
+      return;
+    }
+
     const TAP_ELIGIBLE = new Set(['on', 'off', 'mode_speed_up', 'mode_speed_down', 'set_white']);
     if (TAP_ELIGIBLE.has(normAct)) {
+      if (!gCfg.double && !gCfg.triple) {
+        if (gCfg.short === false) return;
+        this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, 'single', topic, extraMeta);
+        return;
+      }
       const key = `${rem.hex}:${z}:${normAct}`;
       const now = Date.now();
       let tr = this.tapTrackers.get(key);
       if (tr) {
-        // Filter raw 2.4GHz RF packet bursts (< 85ms apart from same physical press)
         if (srcKind === 'rf' && (now - tr.lastTs) < 85) return;
         clearTimeout(tr.timer);
-        tr.count = Math.min(3, tr.count + 1);
+        tr.count = Math.min(gCfg.triple ? 3 : 2, tr.count + 1);
         tr.lastTs = now;
         tr.srcKind = srcKind;
       } else {
@@ -284,21 +309,22 @@ class SmartHomeTwinEngine extends EventEmitter {
       tr.timer = setTimeout(() => {
         this.tapTrackers.delete(key);
         const gesture = tr.count === 1 ? 'single' : (tr.count === 2 ? 'double' : 'triple');
-        this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, tr.srcKind, gesture, topic);
-      }, 360);
+        this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, tr.srcKind, gesture, topic, extraMeta);
+      }, Number(gCfg.window_ms) || 360);
       return;
     }
 
-    // Sliders & wheels execute with zero multi-tap delay
-    this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, 'single', topic);
+    this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, 'single', topic, extraMeta);
   }
 
-  _dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, gesture, topic) {
+  _dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, gesture, topic, extraMeta = {}) {
     const gestureAction = (gesture === 'double' || gesture === 'triple') ? `${normAct}_${gesture}` : normAct;
     this.lastEvent = {
       ts: new Date().toISOString(), source: srcKind,
       remoteName: rem.name, device_id: rem.device_id || parseInt(String(rem.hex || '0').replace(/^0x/i, ''), 16) || 0,
-      hex: rem.hex, model: rem.model, zone: z, action: normAct, gesture, gestureAction, value: val, pct: normPct, topic
+      hex: rem.hex, model: rem.model, zone: z, action: normAct, gesture, gestureAction,
+      segment: extraMeta.segment || 0, segmentsTotal: extraMeta.segmentsTotal || 0, label: extraMeta.label || '',
+      value: val, pct: normPct, topic
     };
     if (this.mqtt) this.mqtt.publish('milight/ha_events', JSON.stringify(this.lastEvent), false);
 
@@ -404,6 +430,44 @@ class SmartHomeTwinEngine extends EventEmitter {
   }
 
   _driveSingleVirtualTarget(tid, act, val, touch, normPct, gesture = 'single') {
+    const devCheck = this.devices.get(tid);
+    const segMatch = devCheck ? String(act).match(/^(hue|cct|sat|bri)_seg_(\d+)$/) : null;
+    if (segMatch) {
+      const surfKind = segMatch[1];
+      const segIdx = Math.max(1, parseInt(segMatch[2], 10));
+      const totalSegs = (this.lastEvent && this.lastEvent.segmentsTotal) ? Number(this.lastEvent.segmentsTotal) : (surfKind === 'hue' ? 6 : 4);
+      const slotPct = totalSegs > 1 ? Math.round(((segIdx - 1) / (totalSegs - 1)) * 100) : 100;
+      if (devCheck.kind === 'ac') {
+        if (surfKind === 'hue') {
+          const AC_MACROS = [
+            { active: true, hvacMode: 'cool', targetTemp: 18, fanPct: 95 },
+            { active: true, hvacMode: 'cool', targetTemp: 21, fanPct: 55 },
+            { active: true, hvacMode: 'cool', targetTemp: 23, fanPct: 35 },
+            { active: true, hvacMode: 'heat', targetTemp: 24, fanPct: 60 },
+            { active: true, hvacMode: 'heat', targetTemp: 27, fanPct: 90 },
+            { active: false, hvacMode: 'off', targetTemp: 21, fanPct: 0 }
+          ];
+          touch(tid, AC_MACROS[(segIdx - 1) % AC_MACROS.length]);
+        } else {
+          const t = Math.round(17 + (slotPct / 100) * 10);
+          touch(tid, { active: true, targetTemp: t, hvacMode: t >= 23 ? 'heat' : 'cool' });
+        }
+        return;
+      }
+      if (['curtain', 'blind', 'garage', 'gate'].includes(devCheck.kind)) { touch(tid, { open: slotPct > 3, position: slotPct }); return; }
+      if (devCheck.kind === 'fan') { touch(tid, { active: slotPct > 0, speed: slotPct }); return; }
+      if (devCheck.kind === 'radiator') { touch(tid, { active: slotPct > 0, hvacMode: slotPct > 0 ? 'heat' : 'off', valvePct: slotPct, targetTemp: Math.round(18 + (slotPct / 100) * 10) }); return; }
+      if (devCheck.kind === 'sprinkler') { touch(tid, { active: slotPct > 0, flowPct: slotPct }); return; }
+      if (devCheck.kind === 'rgb_light') {
+        if (surfKind === 'hue') {
+          const hDeg = Math.round((((segIdx - 0.5) / totalSegs) * 360) % 360);
+          touch(tid, { on: true, hue: hDeg, sat: 92, colorMode: 'hs', presetName: `Slice #${segIdx}` });
+        } else {
+          touch(tid, { on: slotPct > 0, bri: Math.max(15, slotPct), ct: Math.round(153 + (slotPct / 100) * 217), colorMode: 'ct' });
+        }
+        return;
+      }
+    }
     const dev = this.devices.get(tid);
     if (!dev) return;
     const pct = (normPct !== undefined) ? normPct : ((val !== undefined) ? sliderToFullPct(val, 'rf', false) : 100);
@@ -629,6 +693,20 @@ class SmartHomeTwinEngine extends EventEmitter {
       if (u.pathname === '/miboxer_catalog.js' || u.pathname === '/three.min.js') {
         const fp = path.join(__dirname, '..', 'homebridge-ui', 'public', u.pathname.slice(1));
         fs.readFile(fp, (err, buf) => { if (err) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'Content-Type': 'application/javascript' }); res.end(buf); });
+      } else if (req.method === 'POST' && (u.pathname === '/api/remotes' || u.pathname === '/api/remotes/upsert_cache')) {
+        const b = await readJson();
+        if (u.pathname === '/api/remotes') {
+          const postStr = JSON.stringify(b), hu = new URL(`${this.hubUrl}/api/remotes`);
+          const hReq = http.request({ hostname: hu.hostname, port: hu.port || 80, path: hu.pathname, method: 'POST', timeout: 2500, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postStr) } }, (hr) => {
+            hr.resume(); this._onRegistry(postStr);
+            res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}');
+          });
+          hReq.on('error', (e) => { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: e.message })); });
+          hReq.write(postStr); hReq.end();
+        } else {
+          this._onRegistry(JSON.stringify(b));
+          res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"ok":true}');
+        }
       } else if (req.method === 'GET' && u.pathname === '/api/remotes') {
         const reqHub = http.get(`${this.hubUrl}/api/remotes`, { timeout: 2000 }, (hRes) => {
           let b = ''; hRes.on('data', (c) => (b += c));

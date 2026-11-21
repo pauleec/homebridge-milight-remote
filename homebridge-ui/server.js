@@ -22,6 +22,14 @@ class MiLightRemoteUiServer extends HomebridgePluginUiServer {
       const cfg = this._readPlatformConfig();
       return { lanIp: detectLanIp(), twinPort: Number(cfg.twinPort) || 8588, hubUrl: String(cfg.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '') };
     });
+    this.onRequest('/remote-upsert', async (payload) => {
+      const cfg = this._readPlatformConfig();
+      const p = Number(cfg.twinPort) || 8588;
+      const hubUrl = String(cfg.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+      const res = await this._httpPostJson(`${hubUrl}/api/remotes`, payload || {});
+      try { await this._httpPostJson(`http://127.0.0.1:${p}/api/remotes/upsert_cache`, payload || {}); } catch (_) {}
+      return res;
+    });
     this.onRequest('/remotes', async () => {
       const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
       try { const d = await this._httpGetJson(`${hubUrl}/api/remotes`); return Array.isArray(d) ? d : []; } catch (e) { return { error: e.message, remotes: [] }; }

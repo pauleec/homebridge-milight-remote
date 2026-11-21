@@ -134,6 +134,10 @@
   #dupTabOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
   #dupTabOverlay.show { display: flex; }
   .dup-card { background: var(--panel); color: var(--txt); border: 1px solid var(--bdr-strong); border-radius: 12px; max-width: 440px; padding: 22px; text-align: center; box-shadow: var(--shadow); }
+  .mbx-seg-hit { cursor:pointer; transition:fill .15s ease; }
+  .mbx-seg-hit:hover { fill:rgba(2,132,199,.32)!important; }
+  .mbx-seg-hit.fire-rf { fill:rgba(34,197,94,.72)!important; stroke:#15803d!important; stroke-width:2.8px!important; }
+  .mbx-seg-hit.fire-ui { fill:rgba(245,158,11,.72)!important; stroke:#d97706!important; stroke-width:2.8px!important; }
 </style>
 </head>
 <body>
@@ -170,7 +174,7 @@
     <span class="brand-tag">Live RF + Virtual Sandbox</span>
   </div>
   <div class="top-right">
-    <button type="button" class="btn-chip active" id="btnToggleCoach" onclick="toggleCoachCard()">💡 Interactive Tour (9)</button>
+    <button type="button" class="btn-chip active" id="btnToggleCoach" onclick="toggleCoachCard()">💡 Interactive Tour (10)</button>
     <button type="button" class="btn-chip" id="btnVoiceGuide" onclick="toggleVoiceNarrator()" title="Speak interactive tips aloud using browser voice synthesis">🔇 Voice Guide: OFF</button>
     <button type="button" class="btn-chip" id="btnThemeSwitch" onclick="togglePageTheme()">🌙 Dark</button>
   </div>
@@ -216,7 +220,7 @@
     <!-- InteractiveGuided Showcase Coach & Voice Narrator Bubble -->
     <div id="coachCard">
       <div class="coach-top">
-        <span class="coach-step-pill" id="coachStepLabel">Tip 1 of 9</span>
+        <span class="coach-step-pill" id="coachStepLabel">Tip 1 of 10</span>
         <div style="display:flex;gap:4px">
           <button type="button" class="btn-chip" style="padding:2px 7px;font-size:10.5px" onclick="demoCurrentStepForMe()" title="Trigger this demo automatically!">▶ Demo It</button>
           <button type="button" class="btn-chip" style="padding:2px 7px;font-size:10.5px" onclick="toggleCoachCard()">✕</button>
@@ -873,6 +877,17 @@ const SHOWCASE_STEPS = [
     zone: 4,
     demoCmd: () => sendCmd('scene_mode', { scene: 'party', on: true }),
     match: (ev) => ev.action === 'mode' || ev.source === 'direct3d'
+  },
+  {
+    title: 'Segmented Color Wheel & Slider Macro Pads',
+    body: 'Divide any analog Color Wheel into 2–12 discrete pie buttons and CCT/Saturation sliders into 2–6 action slots—with 140ms RF finger-settle protection synced between the ESP32 Hub & Homebridge!',
+    tryHtml: '👉 <b>Try it:</b> Click any numbered <b>Pie Slice (1–6)</b> on the docked remote’s Color Wheel or <b>Slot (1–4)</b> on the CCT bar to fire instant Bedroom AC presets!',
+    voice: 'New in Tip 10: you can divide any RGB color wheel into up to twelve action slices and split sliders into discrete button slots. Click any numbered slice on the docked color wheel to jump Bedroom A C straight between eighteen degree Max Cool, Eco Cool, Warm Heat, or Sleep Off.',
+    cam: [-4.3, 9.8, 5.2, -4.6, 1.3, -3.6],
+    zone: 3,
+    showcaseSegs: true,
+    demoCmd: () => triggerDemoVirtual(3, 'hue_seg_1', 1),
+    match: (ev) => /^(hue|cct|sat|bri)_seg_\d+$/.test(String(ev.action || ''))
   }
 ];
 
@@ -906,6 +921,8 @@ function toggleCoachCard() {
   coachOpen = !coachOpen;
   document.getElementById('coachCard').classList.toggle('hidden', !coachOpen);
   document.getElementById('btnToggleCoach').classList.toggle('active', coachOpen);
+  window.tourShowcaseSegments = Boolean(coachOpen && SHOWCASE_STEPS[coachIdx] && SHOWCASE_STEPS[coachIdx].showcaseSegs);
+  renderDock();
   if (!coachOpen && 'speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
@@ -923,9 +940,10 @@ function renderCoachStep(flyCamera) {
   if (flyCamera && window.eng && s.cam) {
     eng.setCam(s.cam[0], s.cam[1], s.cam[2], s.cam[3], s.cam[4], s.cam[5]);
   }
-  if (flyCamera && remotes.length && s.zone !== undefined) {
+  window.tourShowcaseSegments = Boolean(s.showcaseSegs && coachOpen);
+  if (remotes.length) {
     const cur = remotes[selRem] || remotes[0];
-    zonesByDev[getDevId(cur)] = s.zone;
+    if (flyCamera && s.zone !== undefined) zonesByDev[getDevId(cur)] = s.zone;
     renderDock();
   }
   if (flyCamera && voiceEnabled) speakCoachText(s.voice);
@@ -1060,6 +1078,82 @@ const ZONE_TARGET_NAMES = {
   8: '💦 Z8 Garden Sprinklers'
 };
 
+
+const DOCK_SVG_NS = 'http://www.w3.org/2000/svg';
+function dPolar(cx, cy, r, deg) { const rad = ((deg - 90) * Math.PI) / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+function dWedge(cx, cy, rIn, rOut, sD, eD) {
+  const p1 = dPolar(cx, cy, rOut, sD), p2 = dPolar(cx, cy, rOut, eD), p3 = dPolar(cx, cy, rIn, eD), p4 = dPolar(cx, cy, rIn, sD);
+  const lg = (eD - sD) > 180 ? 1 : 0;
+  return `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} A ${rOut.toFixed(1)} ${rOut.toFixed(1)} 0 ${lg} 1 ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)} A ${rIn.toFixed(1)} ${rIn.toFixed(1)} 0 ${lg} 0 ${p4.x.toFixed(1)} ${p4.y.toFixed(1)} Z`;
+}
+function renderDockSegments(wrap, cur, devId, rtype, curZ) {
+  const svgEl = wrap.querySelector('svg');
+  if (!svgEl) return;
+  const tz = (cur && cur.touch_zones) ? cur.touch_zones : {};
+  const zBit = curZ < 16 ? (1 << curZ) : 0x8000;
+  const demoWheel = window.tourShowcaseSegments ? { enabled:true, segments:6, offset_deg:-30, zone_mask:0xFFFF, labels:['18°C Max Cool','21°C Eco','23°C Vent','24°C Warm','27°C Boost','HVAC Off'] } : tz.hue_ring;
+  const demoCct   = window.tourShowcaseSegments ? { enabled:true, segments:4, zone_mask:0xFFFF, labels:['17°C','20°C','24°C','27°C'] } : tz.cct_bar;
+
+  if (demoWheel && demoWheel.enabled && ((demoWheel.zone_mask ?? 0xFFFF) & zBit)) {
+    const hueEl = svgEl.querySelector('.mbx-hit[data-act="hue"]');
+    if (hueEl && hueEl.getBBox) {
+      const bb = hueEl.getBBox();
+      if (bb.width > 0) {
+        const cx = bb.x + bb.width/2, cy = bb.y + bb.height/2, rOut = Math.max(bb.width, bb.height)/2, rIn = rOut * 0.50;
+        const n = Math.min(12, Math.max(2, Number(demoWheel.segments)||6)), span = 360 / n, off = Number(demoWheel.offset_deg||0);
+        const g = document.createElementNS(DOCK_SVG_NS, 'g');
+        for (let i = 0; i < n; i++) {
+          const sD = off + i*span, eD = sD + span, segAct = `hue_seg_${i+1}`, lbl = (demoWheel.labels||[])[i] || `Slice #${i+1}`;
+          const p = document.createElementNS(DOCK_SVG_NS, 'path');
+          p.setAttribute('d', dWedge(cx, cy, rIn, rOut, sD, eD));
+          p.setAttribute('fill', 'rgba(15,23,42,0.22)'); p.setAttribute('stroke', '#0284c7'); p.setAttribute('stroke-width', '1.6');
+          p.setAttribute('class', 'mbx-seg-hit'); p.setAttribute('data-seg-act', segAct);
+          const t = document.createElementNS(DOCK_SVG_NS, 'title'); t.textContent = `#${i+1}: ${lbl}`; p.appendChild(t);
+          p.onclick = async (ev) => {
+            ev.stopPropagation();
+            flashDock(devId, segAct, curZ, 'ui', i+1);
+            await fetch('/api/virtual_send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ device_id:devId, remote_type:rtype, group_id:curZ, action:segAct, value:i+1 }) });
+          };
+          g.appendChild(p);
+          const lp = dPolar(cx, cy, (rIn+rOut)/2, sD + span/2);
+          const tx = document.createElementNS(DOCK_SVG_NS, 'text');
+          tx.setAttribute('x', lp.x.toFixed(1)); tx.setAttribute('y', (lp.y+3).toFixed(1)); tx.setAttribute('text-anchor', 'middle');
+          tx.setAttribute('font-size', '8.5'); tx.setAttribute('font-weight', '800'); tx.setAttribute('fill', '#fff'); tx.setAttribute('pointer-events', 'none');
+          tx.textContent = String(i+1); g.appendChild(tx);
+        }
+        hueEl.parentNode.appendChild(g);
+      }
+    }
+  }
+  if (demoCct && demoCct.enabled && ((demoCct.zone_mask ?? 0xFFFF) & zBit)) {
+    const barEl = svgEl.querySelector('.mbx-hit[data-act="kelvin"]') || svgEl.querySelector('.mbx-hit[data-act="saturation"]');
+    if (barEl && barEl.getBBox) {
+      const bb = barEl.getBBox();
+      if (bb.width > 0) {
+        const n = Math.min(6, Math.max(2, Number(demoCct.segments)||4)), vert = bb.height > bb.width * 1.3;
+        const g = document.createElementNS(DOCK_SVG_NS, 'g');
+        for (let i = 0; i < n; i++) {
+          const iv = vert ? (n - 1 - i) : i;
+          const rx = vert ? bb.x : bb.x + (iv*bb.width)/n, ry = vert ? bb.y + (iv*bb.height)/n : bb.y;
+          const rw = vert ? bb.width : bb.width/n, rh = vert ? bb.height/n : bb.height;
+          const segAct = `cct_seg_${i+1}`;
+          const rc = document.createElementNS(DOCK_SVG_NS, 'rect');
+          rc.setAttribute('x', rx.toFixed(1)); rc.setAttribute('y', ry.toFixed(1)); rc.setAttribute('width', rw.toFixed(1)); rc.setAttribute('height', rh.toFixed(1));
+          rc.setAttribute('rx', '3'); rc.setAttribute('fill', 'rgba(2,132,199,0.22)'); rc.setAttribute('stroke', '#0284c7'); rc.setAttribute('stroke-width', '1.4');
+          rc.setAttribute('class', 'mbx-seg-hit'); rc.setAttribute('data-seg-act', segAct);
+          rc.onclick = async (ev) => {
+            ev.stopPropagation();
+            flashDock(devId, segAct, curZ, 'ui', i+1);
+            await fetch('/api/virtual_send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ device_id:devId, remote_type:rtype, group_id:curZ, action:segAct, value:i+1 }) });
+          };
+          g.appendChild(rc);
+        }
+        barEl.parentNode.appendChild(g);
+      }
+    }
+  }
+}
+
 function renderDock() {
   if (!remotes.length || !window.MiBoxerCatalog) return;
   const cur = remotes[selRem] || remotes[0], devId = getDevId(cur), curZ = zonesByDev[devId] ?? 1;
@@ -1073,6 +1167,7 @@ function renderDock() {
   const wrap = document.getElementById('rdSvg');
   wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid:'full3d' });
   wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el) => el.classList.add('zone-active'));
+  renderDockSegments(wrap, cur, devId, rtype, curZ);
   wrap.querySelectorAll('.mbx-hit').forEach((el) => {
     el.onclick = async (e) => {
       e.stopPropagation();
@@ -1106,7 +1201,9 @@ function flashDock(devId, act, zone, src, val) {
   renderDock();
   const isRf = src !== 'ui', cls = isRf ? 'fire-rf' : 'fire-ui';
   const wrap = document.getElementById('rdSvg');
-  (ACT_TO_SVG[act] || [act]).forEach((a) => wrap.querySelectorAll(`.mbx-hit[data-act="${a}"]`).forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 750); }));
+  const segEls = wrap.querySelectorAll(`.mbx-seg-hit[data-seg-act="${act}"]`);
+  if (segEls.length) segEls.forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 800); });
+  else (ACT_TO_SVG[act] || [act]).forEach((a) => wrap.querySelectorAll(`.mbx-hit[data-act="${a}"]`).forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 750); }));
   wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${zone}"]`).forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 750); });
   const dk = document.getElementById('remDock'); dk.classList.remove('hit-rf','hit-ui'); dk.classList.add(isRf ? 'hit-rf' : 'hit-ui'); setTimeout(() => dk.classList.remove('hit-rf','hit-ui'), 750);
   const bd = document.getElementById('rdBadge');
