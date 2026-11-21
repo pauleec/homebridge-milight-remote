@@ -88,7 +88,7 @@
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button type="button" class="btn" id="btnToggleWidth" onclick="toggleModalWidth()">↔ Standard Width</button>
-    <a id="hbTwinFullLink" class="ext-btn" href="#" target="_blank">Pop Out Fullscreen 3D (:8588) ↗</a>
+    <button type="button" id="hbTwinFullLink" class="ext-btn" style="cursor:pointer" onclick="openSingletonTwin()">Pop Out Fullscreen 3D (:8588) ↗</button>
   </div>
 </div>
 
@@ -132,7 +132,7 @@
       <div class="grid-3">
         <div><label>1. When Remote</label><select id="rwRemote"></select></div>
         <div><label>2. On Zone</label><select id="rwZone"><option value="*">Any Zone (*)</option><option value="0">Zone 0 (Master)</option><option value="1" selected>Zone 1</option><option value="2">Zone 2</option><option value="3">Zone 3</option><option value="4">Zone 4</option><option value="5">Zone 5</option><option value="6">Zone 6</option><option value="7">Zone 7</option><option value="8">Zone 8</option></select></div>
-        <div><label>3. Sends Button / Slider</label><select id="rwControl"><option value="on">ON Button</option><option value="off">OFF Button</option><option value="brightness">Brightness Slider</option><option value="hue">Color Wheel (Hue)</option><option value="color_temp">CCT Slider</option><option value="saturation">Saturation Slider</option><option value="set_white">W (White)</option><option value="mode">M (Mode)</option><option value="mode_speed_up">S+ (Multi-Function / Speed+)</option><option value="mode_speed_down">S- (Multi-Function / Speed-)</option><option value="night_mode">Hold OFF (Night Mode)</option><option value="*">Any Button/Slider</option></select></div>
+        <div><label>3. Sends Button / Slider</label><select id="rwControl"><option value="on">ON (Short Press)</option><option value="on_double">ON (2x Double Tap)</option><option value="on_triple">ON (3x Triple Tap)</option><option value="off">OFF (Short Press)</option><option value="off_double">OFF (2x Double Tap)</option><option value="night_mode">Hold OFF (Long Press / Night)</option><option value="brightness">Brightness Slider</option><option value="hue">Color Wheel (Hue)</option><option value="color_temp">CCT Slider</option><option value="saturation">Saturation Slider</option><option value="set_white">W (White)</option><option value="mode">M (Mode)</option><option value="mode_speed_up">S+ (Short Press)</option><option value="mode_speed_up_double">S+ (2x Double Tap)</option><option value="mode_speed_up_triple">S+ (3x Triple Tap)</option><option value="mode_speed_down">S- (Multi-Function / Speed-)</option><option value="night_mode">Hold OFF (Night Mode)</option><option value="*">Any Button/Slider</option></select></div>
       </div>
       <div class="grid-2" style="margin-top:10px">
         <div><label>4. Target Integration Type</label><select id="rwTargetType" onchange="renderRwTargetFields()"><option value="homebridge_hap">🏠 Real Homebridge Device</option><option value="mqtt">📡 Custom MQTT Topic</option><option value="webhook">🌐 HTTP Webhook</option><option value="ha_event">🔷 Home Assistant Trigger Event</option></select></div>
@@ -225,6 +225,46 @@ const VIRTUAL_TARGETS = [
 ];
 const ACT_TO_SVG = { on:['on'], off:['off'], brightness:['brightness'], saturation:['saturation','kelvin'], color_temp:['kelvin','saturation'], kelvin:['kelvin','saturation'], hue:['hue'], mode_speed_up:['mode_speed_up','speed_up'], mode_speed_down:['mode_speed_down','speed_down'], set_white:['set_white'], mode:['mode','next_mode'], night_mode:['off','night_mode'] };
 
+
+let twinPopupRef = null;
+const twinChan = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('milight_twin_singleton') : null;
+try { if (window.top) window.top.name = 'milight_hb_settings_parent'; } catch (_) {}
+
+function getTwinFullUrl() {
+  const host = (location.hostname && location.hostname.length > 1)
+    ? location.hostname
+    : (document.referrer ? new URL(document.referrer).hostname : '192.168.6.196');
+  const hbOrigin = encodeURIComponent((document.referrer ? new URL(document.referrer).origin : `http://${host}:8581`));
+  return `http://${host}:${cfgObj.twinPort || 8588}/?hb=${hbOrigin}`;
+}
+
+function openSingletonTwin() {
+  const url = getTwinFullUrl();
+  const btn = document.getElementById('hbTwinFullLink');
+  // Reuse existing named tab/window if open; never spawn 5 duplicates!
+  if (twinPopupRef && !twinPopupRef.closed) {
+    twinPopupRef.focus();
+    if (twinChan) twinChan.postMessage({ type: 'focus_existing' });
+    if (btn) btn.textContent = 'Focused Open 3D Tab (:8588) ↗';
+    return;
+  }
+  twinPopupRef = window.open(url, 'milight_smart_twin_8588');
+  if (twinPopupRef) twinPopupRef.focus();
+  if (btn) btn.textContent = 'Switch to Open 3D Tab (:8588) ↗';
+}
+
+if (twinChan) {
+  twinChan.onmessage = (ev) => {
+    const btn = document.getElementById('hbTwinFullLink');
+    if (!btn) return;
+    if (ev.data && ev.data.type === 'twin_alive') {
+      btn.textContent = 'Switch to Open 3D Tab (:8588) ↗';
+    } else if (ev.data && ev.data.type === 'twin_closed') {
+      btn.textContent = 'Pop Out Fullscreen 3D (:8588) ↗';
+    }
+  };
+}
+
 function applyModalWidth() {
   try {
     const dlg = (window.frameElement && window.frameElement.closest('.modal-dialog')) || (window.parent?.document?.querySelector('ngb-modal-window .modal-dialog, .modal.show .modal-dialog'));
@@ -262,7 +302,7 @@ async function initUi() {
     ['mqttHost','mqttPort','exposureMode','hubUrl'].forEach((id) => { const el=document.getElementById(id); if(cfgObj[id]!==undefined) el.value=String(cfgObj[id]); el.onchange=saveCfg; });
   }
   const host = (location.hostname && location.hostname.length > 1) ? location.hostname : (document.referrer ? new URL(document.referrer).hostname : hostInfo.lanIp);
-  document.getElementById('hbTwinFullLink').href = `http://${host}:${cfgObj.twinPort || 8588}`;
+  /* URL managed dynamically via openSingletonTwin() */
 
   const [stRes, routeRes, realRes] = await Promise.all([
     apiReq('/twin-state').catch(()=>({})),
@@ -324,7 +364,25 @@ function mountSvgInto(elId, r, uid) {
   const curZ = String(activeZoneByDev[devId] ?? 1);
   box.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el)=>el.classList.add('zone-active'));
   box.querySelectorAll('.mbx-hit').forEach((el) => {
+    let holdT = null, heldFired = false;
+    el.onpointerdown = (e) => {
+      const act0 = el.getAttribute('data-act') || '';
+      if (act0 !== 'on' && act0 !== 'off' && act0 !== 'zone_on' && act0 !== 'zone_off') return;
+      heldFired = false;
+      holdT = setTimeout(() => {
+        heldFired = true;
+        const zAttr = el.getAttribute('data-zone');
+        if (zAttr !== null && zAttr !== '') selectZone(devId, Number(zAttr));
+        const longAct = (act0 === 'off' || act0 === 'zone_off') ? 'night_mode' : 'set_white';
+        localUiSuppress[`${devId}:${activeZoneByDev[devId]}`] = Date.now();
+        triggerVisualFeedback(devId, longAct, activeZoneByDev[devId], 'ui', 0);
+        apiReq('/virtual-send', { device_id:devId, remote_type:rtype, group_id:activeZoneByDev[devId]??1, action:longAct, value:0 });
+      }, 650);
+    };
+    const clearHold = () => { if (holdT) { clearTimeout(holdT); holdT = null; } };
+    el.onpointerup = clearHold; el.onpointerleave = clearHold;
     el.onclick = (e) => {
+      if (heldFired) { heldFired = false; e.stopPropagation(); return; }
       e.stopPropagation();
       const act = el.getAttribute('data-act') || 'on', zAttr = el.getAttribute('data-zone');
       if (zAttr !== null && zAttr !== '') selectZone(devId, Number(zAttr));

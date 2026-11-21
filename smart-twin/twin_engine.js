@@ -155,6 +155,7 @@ class SmartHomeTwinEngine extends EventEmitter {
     this.remotesByPrefix = new Map();
     this.sseClients = new Set();
     this.uiTxMarks = new Map();
+    this.tapTrackers = new Map();
     this.lastEvent = null;
 
     this.routing = {
@@ -255,19 +256,58 @@ class SmartHomeTwinEngine extends EventEmitter {
     const normAct = (act === 'level') ? 'brightness' : act;
     const normPct = (normAct === 'brightness' && effVal !== undefined) ? sliderToFullPct(effVal, srcKind, is100Scale) : undefined;
 
+    // Hardware Long-Press signals (night_mode = Hold OFF, set_white on rgb_cct = Hold ON)
+    if (normAct === 'night_mode') {
+      const pendOff = this.tapTrackers.get(`${rem.hex}:${z}:off`);
+      if (pendOff && pendOff.timer) { clearTimeout(pendOff.timer); this.tapTrackers.delete(`${rem.hex}:${z}:off`); }
+      this._dispatchClassifiedEvent(rem, z, 'night_mode', val, normPct, srcKind, 'long', topic);
+      return;
+    }
+
+    // Multi-tap eligible discrete buttons: on, off, mode_speed_up (S+), mode_speed_down (S-), set_white
+    const TAP_ELIGIBLE = new Set(['on', 'off', 'mode_speed_up', 'mode_speed_down', 'set_white']);
+    if (TAP_ELIGIBLE.has(normAct)) {
+      const key = `${rem.hex}:${z}:${normAct}`;
+      const now = Date.now();
+      let tr = this.tapTrackers.get(key);
+      if (tr) {
+        // Filter raw 2.4GHz RF packet bursts (< 85ms apart from same physical press)
+        if (srcKind === 'rf' && (now - tr.lastTs) < 85) return;
+        clearTimeout(tr.timer);
+        tr.count = Math.min(3, tr.count + 1);
+        tr.lastTs = now;
+        tr.srcKind = srcKind;
+      } else {
+        tr = { count: 1, lastTs: now, srcKind };
+        this.tapTrackers.set(key, tr);
+      }
+      tr.timer = setTimeout(() => {
+        this.tapTrackers.delete(key);
+        const gesture = tr.count === 1 ? 'single' : (tr.count === 2 ? 'double' : 'triple');
+        this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, tr.srcKind, gesture, topic);
+      }, 360);
+      return;
+    }
+
+    // Sliders & wheels execute with zero multi-tap delay
+    this._dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, 'single', topic);
+  }
+
+  _dispatchClassifiedEvent(rem, z, normAct, val, normPct, srcKind, gesture, topic) {
+    const gestureAction = (gesture === 'double' || gesture === 'triple') ? `${normAct}_${gesture}` : normAct;
     this.lastEvent = {
       ts: new Date().toISOString(), source: srcKind,
       remoteName: rem.name, device_id: rem.device_id || parseInt(String(rem.hex || '0').replace(/^0x/i, ''), 16) || 0,
-      hex: rem.hex, model: rem.model, zone: z, action: normAct, value: val, pct: normPct, topic
+      hex: rem.hex, model: rem.model, zone: z, action: normAct, gesture, gestureAction, value: val, pct: normPct, topic
     };
     if (this.mqtt) this.mqtt.publish('milight/ha_events', JSON.stringify(this.lastEvent), false);
 
-    const touched = this._applySandboxMappedAction(rem.hex, z, normAct, val, normPct);
-    const firedRules = this._executeMatchingRealRules(rem.hex, z, normAct, val, normPct);
+    const touched = this._applySandboxMappedAction(rem.hex, z, normAct, val, normPct, gesture);
+    const firedRules = this._executeMatchingRealRules(rem.hex, z, normAct, val, normPct, gesture);
     this._broadcastSse('rf_event', { event: this.lastEvent, updated: touched, firedRules });
   }
 
-  _applySandboxMappedAction(remoteHex, z, act, val, normPct) {
+  _applySandboxMappedAction(remoteHex, z, act, val, normPct, gesture = 'single') {
     if (!this.routing.sandboxEnabled) return [];
     const changed = [];
     const touch = (id, patch) => {
@@ -292,8 +332,7 @@ class SmartHomeTwinEngine extends EventEmitter {
       return d && d.kind === 'fan';
     });
 
-    // Multi-function S+ / S- Auxiliary Button Demo on any non-fan zone!
-    // S+ toggles Driveway Bollards ON <-> OFF; S- cycles architectural color/CCT presets!
+    // Multi-function S+ / S- Auxiliary Button Demo (Short / Double / Triple Tap!)
     if ((act === 'mode_speed_up' || act === 'mode_speed_down') && !zoneHasFan) {
       const drv = this.devices.get('z0_driveway');
       if (drv) {
@@ -305,9 +344,17 @@ class SmartHomeTwinEngine extends EventEmitter {
           { presetName: 'Sunset Rose', colorMode: 'hs', ct: 290, sat: 88, hue: 315, bri: 88 }
         ];
         if (act === 'mode_speed_up') {
-          touch('z0_driveway', { on: !drv.on });
+          if (gesture === 'double') {
+            touch('z0_driveway', { on: true, bri: 100, sat: 0, ct: 200, colorMode: 'ct', presetName: '2x Welcome 100%' });
+          } else if (gesture === 'triple') {
+            touch('z0_driveway', { on: true, bri: 100, presetName: '3x Party Chase' });
+            touch('scene_mode', { scene: 'party', on: true });
+          } else {
+            touch('z0_driveway', { on: !drv.on });
+          }
         } else {
-          const nextIdx = ((drv.presetIdx || 0) + 1) % PRESETS.length;
+          const step = gesture === 'double' ? 2 : 1;
+          const nextIdx = ((drv.presetIdx || 0) + step) % PRESETS.length;
           touch('z0_driveway', Object.assign({ on: true, presetIdx: nextIdx }, PRESETS[nextIdx]));
         }
       }
@@ -316,7 +363,15 @@ class SmartHomeTwinEngine extends EventEmitter {
 
     for (const tid of targets) {
       if (tid === 'master_all') {
-        if (act === 'off') {
+        if (act === 'on' && gesture === 'double') {
+          touch('z1_curtains', { position: 50, open: true });
+          touch('z2_blinds',   { position: 50, open: true });
+          touch('z0_driveway', { on: true, bri: 75, presetName: '2x Louver 50%' });
+        } else if (act === 'on' && gesture === 'triple') {
+          touch('scene_mode',  { scene: 'sunset', on: true });
+          touch('z1_curtains', { position: 65, open: true });
+          touch('z0_driveway', { on: true, colorMode: 'hs', hue: 32, sat: 90, bri: 90, presetName: '3x Sunset Lounge' });
+        } else if (act === 'off') {
           touch('z0_driveway',   { on: false });
           touch('z1_curtains',   { position: 0, open: false });
           touch('z2_blinds',     { position: 0, open: false });
@@ -333,7 +388,7 @@ class SmartHomeTwinEngine extends EventEmitter {
           touch('z3_ac',         { active: true, hvacMode: 'cool' });
           touch('z4_fan',        { active: true, speed: 60 });
         } else if (act === 'night_mode') {
-          touch('z0_driveway',   { on: true, bri: 15, sat: 0, ct: 360, colorMode: 'ct', presetName: 'Night 15%' });
+          touch('z0_driveway',   { on: true, bri: 15, sat: 0, ct: 360, colorMode: 'ct', presetName: 'Hold: Night 15%' });
           touch('z1_curtains',   { position: 0, open: false });
           touch('z2_blinds',     { position: 0, open: false });
           touch('z6_garage',     { open: false, position: 0 });
@@ -342,53 +397,103 @@ class SmartHomeTwinEngine extends EventEmitter {
           touch('scene_mode',    { scene: 'night', on: true });
         }
       } else {
-        this._driveSingleVirtualTarget(tid, act, val, touch, normPct);
+        this._driveSingleVirtualTarget(tid, act, val, touch, normPct, gesture);
       }
     }
     return changed;
   }
 
-  _driveSingleVirtualTarget(tid, act, val, touch, normPct) {
+  _driveSingleVirtualTarget(tid, act, val, touch, normPct, gesture = 'single') {
     const dev = this.devices.get(tid);
     if (!dev) return;
     const pct = (normPct !== undefined) ? normPct : ((val !== undefined) ? sliderToFullPct(val, 'rf', false) : 100);
     if (['curtain','blind','garage','gate'].includes(dev.kind)) {
-      if (act === 'on') touch(tid, { open: true, position: 100 });
-      else if (act === 'off') touch(tid, { open: false, position: 0 });
-      else if (act === 'night_mode') touch(tid, { open: dev.kind === 'curtain' || dev.kind === 'blind', position: (dev.kind === 'curtain' || dev.kind === 'blind') ? 20 : 0 });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { open: pct > 2, position: pct });
+      const isShade = (dev.kind === 'curtain' || dev.kind === 'blind');
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { open: true, position: isShade ? 50 : 25 });
+        else if (gesture === 'triple') touch(tid, { open: true, position: isShade ? 75 : 55 });
+        else touch(tid, { open: true, position: 100 });
+      } else if (act === 'off') {
+        if (gesture === 'double' && isShade) touch(tid, { open: true, position: 25 });
+        else touch(tid, { open: false, position: 0 });
+      } else if (act === 'night_mode') {
+        touch(tid, { open: isShade, position: isShade ? 20 : 0 });
+      } else if (act === 'set_white') {
+        touch(tid, { open: true, position: 50 });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { open: pct > 2, position: pct });
+      }
     } else if (dev.kind === 'ac') {
-      if (act === 'on') touch(tid, { active: true, hvacMode: dev.hvacMode === 'off' ? 'cool' : dev.hvacMode });
-      else if (act === 'off') touch(tid, { active: false, hvacMode: 'off' });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { active: pct > 0, hvacMode: dev.hvacMode === 'off' ? 'cool' : dev.hvacMode, fanPct: pct });
-      else if (act === 'hue' && val !== undefined) { const cool = val >= 140 && val <= 270; touch(tid, { active: true, hvacMode: cool ? 'cool' : 'heat', targetTemp: cool ? 19 : 25 }); }
-      else if ((act === 'color_temp' || act === 'kelvin' || act === 'saturation') && val !== undefined) {
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { active: true, hvacMode: 'cool', targetTemp: 16, fanPct: 100 });
+        else if (gesture === 'triple') touch(tid, { active: true, hvacMode: 'heat', targetTemp: 27, fanPct: 90 });
+        else touch(tid, { active: true, hvacMode: dev.hvacMode === 'off' ? 'cool' : dev.hvacMode });
+      } else if (act === 'off') {
+        touch(tid, { active: false, hvacMode: 'off' });
+      } else if (act === 'night_mode') {
+        touch(tid, { active: true, hvacMode: 'cool', targetTemp: 22, fanPct: 20 });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { active: pct > 0, hvacMode: dev.hvacMode === 'off' ? 'cool' : dev.hvacMode, fanPct: pct });
+      } else if (act === 'hue' && val !== undefined) {
+        const cool = val >= 140 && val <= 270;
+        touch(tid, { active: true, hvacMode: cool ? 'cool' : 'heat', targetTemp: cool ? 19 : 25 });
+      } else if ((act === 'color_temp' || act === 'kelvin' || act === 'saturation') && val !== undefined) {
         const cctPct = val > 100 ? Math.max(0, Math.min(100, Math.round(((val - 153) / 217) * 100))) : Math.max(0, Math.min(100, val));
         const t = Math.round(16 + (cctPct / 100) * 12);
         touch(tid, { active: true, targetTemp: t, hvacMode: t >= 23 ? 'heat' : 'cool' });
       }
     } else if (dev.kind === 'fan') {
-      if (act === 'on') touch(tid, { active: true, speed: dev.speed > 0 ? dev.speed : 60 });
-      else if (act === 'off') touch(tid, { active: false, speed: 0 });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { active: pct > 0, speed: pct });
-      else if (act === 'mode_speed_up') touch(tid, { active: true, speed: Math.min(100, (dev.speed || 40) + 20) });
-      else if (act === 'mode_speed_down') touch(tid, { active: true, speed: Math.max(0, (dev.speed || 40) - 20) });
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { active: true, speed: 100 });
+        else if (gesture === 'triple') touch(tid, { active: true, speed: 25 });
+        else touch(tid, { active: true, speed: dev.speed > 0 ? dev.speed : 60 });
+      } else if (act === 'off' || act === 'night_mode') {
+        touch(tid, { active: false, speed: 0 });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { active: pct > 0, speed: pct });
+      } else if (act === 'mode_speed_up') {
+        touch(tid, { active: true, speed: gesture === 'double' ? 100 : Math.min(100, (dev.speed || 40) + 20) });
+      } else if (act === 'mode_speed_down') {
+        touch(tid, { active: true, speed: gesture === 'double' ? 20 : Math.max(15, (dev.speed || 40) - 20) });
+      }
     } else if (dev.kind === 'radiator') {
-      if (act === 'on') touch(tid, { active: true, hvacMode: 'heat', valvePct: 80, targetTemp: 24 });
-      else if (act === 'off') touch(tid, { active: false, hvacMode: 'off', valvePct: 0 });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { active: pct > 0, hvacMode: pct > 0 ? 'heat' : 'off', valvePct: pct, targetTemp: Math.round(18 + (pct / 100) * 12) });
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { active: true, hvacMode: 'heat', valvePct: 100, targetTemp: 28 });
+        else if (gesture === 'triple') touch(tid, { active: true, hvacMode: 'heat', valvePct: 35, targetTemp: 20 });
+        else touch(tid, { active: true, hvacMode: 'heat', valvePct: 80, targetTemp: 24 });
+      } else if (act === 'off') {
+        touch(tid, { active: false, hvacMode: 'off', valvePct: 0 });
+      } else if (act === 'night_mode') {
+        touch(tid, { active: true, hvacMode: 'heat', valvePct: 25, targetTemp: 18 });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { active: pct > 0, hvacMode: pct > 0 ? 'heat' : 'off', valvePct: pct, targetTemp: Math.round(18 + (pct / 100) * 12) });
+      }
     } else if (dev.kind === 'sprinkler') {
-      if (act === 'on') touch(tid, { active: true, flowPct: 85 });
-      else if (act === 'off') touch(tid, { active: false, flowPct: 0 });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { active: pct > 0, flowPct: pct });
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { active: true, flowPct: 100 });
+        else if (gesture === 'triple') touch(tid, { active: true, flowPct: 40 });
+        else touch(tid, { active: true, flowPct: 85 });
+      } else if (act === 'off' || act === 'night_mode') {
+        touch(tid, { active: false, flowPct: 0 });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { active: pct > 0, flowPct: pct });
+      }
     } else if (dev.kind === 'rgb_light') {
-      if (act === 'on') touch(tid, { on: true });
-      else if (act === 'off') touch(tid, { on: false });
-      else if (act === 'set_white') touch(tid, { on: true, sat: 0, ct: 260, colorMode: 'ct' });
-      else if (act === 'brightness' && val !== undefined) touch(tid, { on: pct > 0, bri: pct });
-      else if (act === 'hue' && val !== undefined) touch(tid, { on: true, hue: val, sat: 90, colorMode: 'hs' });
-      else if (act === 'saturation' && val !== undefined) touch(tid, { on: true, sat: Math.max(0, Math.min(100, val)), colorMode: 'hs' });
-      else if ((act === 'color_temp' || act === 'kelvin') && val !== undefined) touch(tid, { on: true, ct: val > 100 ? val : Math.round(153 + (val / 100) * 217), sat: 0, colorMode: 'ct' });
+      if (act === 'on') {
+        if (gesture === 'double') touch(tid, { on: true, bri: 100, sat: 0, ct: 200, colorMode: 'ct', presetName: '2x Full White' });
+        else if (gesture === 'triple') touch(tid, { on: true, bri: 95, sat: 90, hue: 280, colorMode: 'hs', presetName: '3x Royal Violet' });
+        else touch(tid, { on: true });
+      } else if (act === 'off') {
+        touch(tid, { on: false });
+      } else if (act === 'night_mode') {
+        touch(tid, { on: true, bri: 15, sat: 0, ct: 360, colorMode: 'ct', presetName: 'Night 15%' });
+      } else if (act === 'set_white') {
+        touch(tid, { on: true, sat: 0, ct: 260, colorMode: 'ct', presetName: 'Pure White' });
+      } else if (act === 'brightness' && val !== undefined) {
+        touch(tid, { on: pct > 0, bri: pct });
+      } else if (act === 'hue' && val !== undefined) {
+        touch(tid, { on: true, hue: val, sat: 90, colorMode: 'hs', presetName: 'Hue ' + val + '°' });
+      }
     }
   }
 
@@ -437,13 +542,14 @@ class SmartHomeTwinEngine extends EventEmitter {
     });
   }
 
-  _executeMatchingRealRules(remoteHex, z, act, val, normPct) {
+  _executeMatchingRealRules(remoteHex, z, act, val, normPct, gesture = 'single') {
     const fired = [];
     for (const rule of (this.routing.realRules || [])) {
       if (rule.enabled === false) continue;
       const rOk = (!rule.remoteHex || rule.remoteHex === '*' || String(rule.remoteHex).toUpperCase() === String(remoteHex).toUpperCase());
       const zOk = (rule.zone === '*' || Number(rule.zone) === Number(z));
-      const aOk = (rule.control === '*' || rule.control === act);
+      const gAct = (gesture === 'double' || gesture === 'triple') ? `${act}_${gesture}` : act;
+      const aOk = (rule.control === '*' || rule.control === gAct || (gesture === 'single' && rule.control === act));
       if (rOk && zOk && aOk) { this.executeSingleRealRule(rule, act, val, normPct); fired.push(rule.name || rule.id); }
     }
     return fired;

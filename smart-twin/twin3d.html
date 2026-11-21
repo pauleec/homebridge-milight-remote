@@ -3,94 +3,253 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MiBoxer 3D Cutaway Smart Home Twin (:8588)</title>
+<title>MiBoxer 3D Smart Home Showcase (:8588)</title>
 <style>
-  :root { --bg:#0b1324; --panel:#111c33; --card:#172542; --bdr:#293b5f; --txt:#f8fafc; --mut:#94a3b8; --acc:#38bdf8; --rf:#22c55e; --ui:#f59e0b; }
-  * { box-sizing:border-box; }
-  html, body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,sans-serif; }
-  .app { display:grid; grid-template-columns:1fr 330px; height:100vh; width:100vw; }
-  @media(max-width:960px){ .app { grid-template-columns:1fr; } aside { display:none; } }
-  #vp { position:relative; width:100%; height:100%; overflow:hidden; background:#0b1324; }
-  #vp canvas { display:block; width:100%; height:100%; }
-  .hud-top { position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; z-index:10; pointer-events:none; }
-  .hud-grp { pointer-events:auto; display:flex; gap:5px; flex-wrap:wrap; background:rgba(15,23,42,.86); backdrop-filter:blur(8px); border:1px solid var(--bdr); padding:6px 8px; border-radius:9px; }
-  .chip { background:#1e293b; color:#e2e8f0; border:1px solid #334155; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; }
-  .chip:hover { border-color:var(--acc); color:#fff; }
-  #remDock { position:absolute; top:60px; left:12px; width:222px; background:rgba(15,23,42,.90); backdrop-filter:blur(10px); border:1px solid var(--bdr); border-radius:11px; padding:10px; z-index:12; box-shadow:0 10px 25px rgba(0,0,0,.4); }
-  #remDock.min #remDockBody { display:none; } #remDock.min { width:auto; }
-  #remDock.hit-rf { border-color:var(--rf); box-shadow:0 0 18px rgba(34,197,94,.4); }
-  #remDock.hit-ui { border-color:var(--ui); box-shadow:0 0 18px rgba(245,158,11,.4); }
-  .rd-tabs, .rd-zones { display:flex; gap:4px; flex-wrap:wrap; margin:6px 0; justify-content:center; }
-  .rd-btn { padding:3px 7px; font-size:10px; font-weight:800; border-radius:5px; border:1px solid var(--bdr); background:#1e293b; color:#cbd5e1; cursor:pointer; }
-  .rd-btn.active { background:#ea580c; border-color:#f97316; color:#fff; }
-  #rdSvg { display:flex; justify-content:center; align-items:center; min-height:205px; background:rgba(8,13,26,.75); border:1px solid var(--bdr); border-radius:8px; padding:8px; overflow:hidden; }
-  #rdSvg svg { max-height:195px; max-width:170px; width:auto!important; height:auto!important; display:block; user-select:none; }
-  .mbx-hit { cursor:pointer; }
-  .mbx-hit.zone-active > circle, .mbx-hit.zone-active > rect, circle.mbx-hit.zone-active, rect.mbx-hit.zone-active { stroke:#f97316!important; stroke-width:2.5px!important; }
-  .mbx-hit.fire-rf > rect, .mbx-hit.fire-rf > circle, rect.mbx-hit.fire-rf, circle.mbx-hit.fire-rf { fill:#86efac!important; stroke:#16a34a!important; stroke-width:3px!important; }
-  .mbx-hit.fire-ui > rect, .mbx-hit.fire-ui > circle, rect.mbx-hit.fire-ui, circle.mbx-hit.fire-ui { fill:#fde68a!important; stroke:#d97706!important; stroke-width:3px!important; }
-  #labelsLayer { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:8; }
-  .m3d-lbl { position:absolute; transform:translate(-50%,-100%); pointer-events:auto; background:rgba(255,255,255,.93); color:#0f172a; border:1px solid #cbd5e1; box-shadow:0 3px 10px rgba(0,0,0,.28); border-radius:6px; padding:3px 8px; font-size:11px; font-weight:700; white-space:nowrap; cursor:pointer; }
-  .m3d-lbl .exp-hint { display:none; font-size:9.5px; color:#ea580c; margin-left:5px; }
-  .m3d-lbl:hover .exp-hint { display:inline; }
-  .m3d-lbl.on { border-color:#16a34a; }
-  .m3d-lbl.pulse-act { border-color:#ea580c!important; background:#fff7ed!important; transform:translate(-50%,-112%) scale(1.07); z-index:15; }
-  #toastBar { position:absolute; bottom:14px; left:14px; right:14px; background:rgba(255,255,255,.95); color:#0f172a; border:1px solid #cbd5e1; border-radius:9px; padding:9px 14px; font-size:13px; z-index:11; box-shadow:0 6px 20px rgba(0,0,0,.28); }
-  aside { background:var(--panel); border-left:1px solid var(--bdr); padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:9px; }
-  .dcard { background:var(--card); border:1px solid var(--bdr); border-radius:8px; padding:9px 11px; }
-  .dcard-hdr { display:flex; justify-content:space-between; align-items:center; font-size:12.5px; font-weight:700; margin-bottom:6px; }
-  .dcard input[type=range] { width:100%; accent-color:#38bdf8; cursor:pointer; }
+  :root {
+    --bg: #f1f5f9;
+    --nav: #ffffff;
+    --panel: #ffffff;
+    --card: #f8fafc;
+    --stage: #f1f5f9;
+    --bdr: #e2e8f0;
+    --bdr-strong: #cbd5e1;
+    --txt: #0f172a;
+    --mut: #64748b;
+    --hb-orange: #ea580c;
+    --hb-orange-soft: #fff7ed;
+    --acc: #0284c7;
+    --acc-soft: #e0f2fe;
+    --rf: #16a34a;
+    --rf-soft: #dcfce7;
+    --ui: #d97706;
+    --ui-soft: #fef3c7;
+    --glass: rgba(255, 255, 255, 0.94);
+    --shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+  body.dark {
+    --bg: #020817;
+    --nav: #091022;
+    --panel: #091022;
+    --card: #111c33;
+    --stage: #0b1324;
+    --bdr: #1e293b;
+    --bdr-strong: #334155;
+    --txt: #f8fafc;
+    --mut: #94a3b8;
+    --hb-orange: #f97316;
+    --hb-orange-soft: #431407;
+    --acc: #38bdf8;
+    --acc-soft: #0c4a6e;
+    --rf: #22c55e;
+    --rf-soft: #052e16;
+    --ui: #f59e0b;
+    --ui-soft: #451a03;
+    --glass: rgba(15, 23, 42, 0.92);
+    --shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+  /* Top Navigation Bar with 1-Click Return to Homebridge Settings */
+  .top-bar { height: 54px; background: var(--nav); border-bottom: 1px solid var(--bdr); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; gap: 10px; z-index: 30; }
+  .top-left, .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .back-hb-btn { background: var(--hb-orange); color: #fff; border: 1px solid var(--hb-orange); border-radius: 7px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(234,88,12,.25); transition: opacity .15s; }
+  .back-hb-btn:hover { opacity: 0.92; }
+  .brand-title { font-size: 14.5px; font-weight: 800; letter-spacing: -0.01em; margin-left: 4px; }
+  .brand-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--acc-soft); color: var(--acc); border: 1px solid var(--bdr); }
+
+  .btn-chip { background: var(--card); color: var(--txt); border: 1px solid var(--bdr-strong); border-radius: 6px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all .14s; }
+  .btn-chip:hover { border-color: var(--hb-orange); }
+  .btn-chip.active { background: var(--hb-orange); color: #fff; border-color: var(--hb-orange); }
+  .btn-chip.voice-on { background: var(--acc-soft); color: var(--acc); border-color: var(--acc); font-weight: 700; }
+
+  /* Main Layout */
+  .app { display: grid; grid-template-columns: 1fr 340px; height: calc(100vh - 54px); width: 100vw; }
+  @media(max-width: 980px) { .app { grid-template-columns: 1fr; } aside { display: none; } }
+
+  #vp { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--stage); }
+  #vp canvas { display: block; width: 100%; height: 100%; }
+
+  /* Floating Camera & Scene Controls */
+  .hud-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; z-index: 10; pointer-events: none; }
+  .hud-grp { pointer-events: auto; display: flex; gap: 4px; flex-wrap: wrap; background: var(--glass); backdrop-filter: blur(8px); border: 1px solid var(--bdr-strong); padding: 5px 7px; border-radius: 8px; box-shadow: var(--shadow); }
+
+  /* Interactive Docked SVG Remote */
+  #remDock { position: absolute; top: 58px; left: 12px; width: 226px; background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--bdr-strong); border-radius: 11px; padding: 10px; z-index: 12; box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s; }
+  #remDock.min #remDockBody { display: none; }
+  #remDock.min { width: auto; }
+  #remDock.hit-rf { border-color: var(--rf); box-shadow: 0 0 0 3px rgba(22,163,74,.25); }
+  #remDock.hit-ui { border-color: var(--ui); box-shadow: 0 0 0 3px rgba(245,158,11,.28); }
+  .rd-tabs, .rd-zones { display: flex; gap: 3px; flex-wrap: wrap; margin: 5px 0; justify-content: center; }
+  .rd-btn { padding: 3px 7px; font-size: 10px; font-weight: 700; border-radius: 5px; border: 1px solid var(--bdr-strong); background: var(--panel); color: var(--txt); cursor: pointer; }
+  .rd-btn.active { background: var(--hb-orange); border-color: var(--hb-orange); color: #fff; }
+  #rdTargetHint { font-size: 10.5px; font-weight: 700; color: var(--acc); text-align: center; margin-bottom: 5px; min-height: 15px; }
+  #rdSvg { display: flex; justify-content: center; align-items: center; min-height: 205px; background: var(--stage); border: 1px solid var(--bdr); border-radius: 8px; padding: 8px; overflow: hidden; }
+  #rdSvg svg { max-height: 195px; max-width: 170px; width: auto !important; height: auto !important; display: block; user-select: none; }
+
+  .mbx-hit { cursor: pointer; }
+  .mbx-hit.zone-active > circle, .mbx-hit.zone-active > rect, circle.mbx-hit.zone-active, rect.mbx-hit.zone-active { stroke: var(--hb-orange) !important; stroke-width: 2.6px !important; }
+  .mbx-hit.fire-rf > rect, .mbx-hit.fire-rf > circle, rect.mbx-hit.fire-rf, circle.mbx-hit.fire-rf { fill: #86efac !important; stroke: #15803d !important; stroke-width: 3px !important; }
+  .mbx-hit.fire-ui > rect, .mbx-hit.fire-ui > circle, rect.mbx-hit.fire-ui, circle.mbx-hit.fire-ui { fill: #fde68a !important; stroke: #d97706 !important; stroke-width: 3px !important; }
+
+  /* Interactive Showcase Coach & Voice Guide Bubble (Top-Right of 3D Stage) */
+  #coachCard { position: absolute; top: 58px; right: 12px; width: 325px; background: var(--glass); backdrop-filter: blur(10px); border: 1.5px solid var(--acc); border-radius: 12px; padding: 12px 13px; z-index: 14; box-shadow: var(--shadow); transition: transform .2s, border-color .25s; }
+  #coachCard.hidden { display: none; }
+  #coachCard.celebrate { border-color: var(--rf); box-shadow: 0 0 0 4px rgba(22,163,74,.22), var(--shadow); }
+  .coach-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+  .coach-step-pill { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--acc); background: var(--acc-soft); padding: 2px 8px; border-radius: 999px; }
+  .coach-title { font-size: 14px; font-weight: 800; margin: 4px 0; color: var(--txt); display: flex; align-items: center; gap: 6px; }
+  .coach-body { font-size: 12px; line-height: 1.48; color: var(--mut); margin-bottom: 9px; }
+  .coach-try { background: var(--card); border: 1px dashed var(--bdr-strong); border-radius: 8px; padding: 7px 9px; font-size: 11.5px; font-weight: 600; color: var(--txt); margin-bottom: 9px; }
+  .coach-try b { color: var(--hb-orange); }
+  .coach-done-banner { display: none; background: var(--rf-soft); color: var(--rf); border: 1px solid var(--rf); border-radius: 7px; padding: 5px 9px; font-size: 11.5px; font-weight: 700; margin-bottom: 8px; }
+  .coach-done-banner.show { display: block; }
+  .coach-actions { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .coach-dots { display: flex; gap: 4px; }
+  .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--bdr-strong); cursor: pointer; }
+  .cdot.active { background: var(--hb-orange); transform: scale(1.25); }
+  .cdot.done { background: var(--rf); }
+
+  /* Floating 3D Room Labels & Persistent Bottom Action Banner */
+  #labelsLayer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 8; }
+  .m3d-lbl { position: absolute; transform: translate(-50%, -100%); pointer-events: auto; background: var(--glass); color: var(--txt); border: 1px solid var(--bdr-strong); box-shadow: 0 2px 8px rgba(15,23,42,.15); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: transform .15s, border-color .2s; }
+  .m3d-lbl .exp-hint { display: none; font-size: 9.5px; color: var(--hb-orange); margin-left: 5px; }
+  .m3d-lbl:hover .exp-hint { display: inline; }
+  .m3d-lbl.on { border-color: var(--rf); }
+  .m3d-lbl.pulse-act { border-color: var(--hb-orange) !important; background: var(--hb-orange-soft) !important; transform: translate(-50%, -112%) scale(1.07); z-index: 15; }
+
+  #toastBar { position: absolute; bottom: 12px; left: 12px; right: 12px; background: var(--glass); backdrop-filter: blur(8px); color: var(--txt); border: 1px solid var(--bdr-strong); border-radius: 9px; padding: 9px 14px; font-size: 13px; z-index: 11; box-shadow: var(--shadow); transition: border-color .2s; }
+  #toastBar.active { border-color: var(--hb-orange); }
+
+  /* Right-Hand Interactive Device & Quick-Tip Sidebar */
+  aside { background: var(--panel); border-left: 1px solid var(--bdr); padding: 13px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .aside-hdr { display: flex; justify-content: space-between; align-items: center; }
+  .dcard { background: var(--card); border: 1px solid var(--bdr); border-radius: 8px; padding: 8px 10px; transition: border-color .15s; }
+  .dcard:hover { border-color: var(--bdr-strong); }
+  .dcard-hdr { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .dcard-tip { font-size: 10.5px; color: var(--mut); margin-bottom: 5px; }
+  .dcard input[type=range] { width: 100%; accent-color: var(--hb-orange); cursor: pointer; height: 6px; }
+
+  /* Duplicate Tab Guard Overlay (Prevents 5 tabs running WebGL at once!) */
+  #dupTabOverlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  #dupTabOverlay.show { display: flex; }
+  .dup-card { background: var(--panel); color: var(--txt); border: 1px solid var(--bdr-strong); border-radius: 12px; max-width: 440px; padding: 22px; text-align: center; box-shadow: var(--shadow); }
 </style>
 </head>
 <body>
+<script>
+  window.name = 'milight_smart_twin_8588';
+  (function(){
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved === 'dark') document.body.className = 'dark';
+    } catch(e){}
+  })();
+</script>
+
+<!-- Duplicate Tab Prevention Overlay -->
+<div id="dupTabOverlay">
+  <div class="dup-card">
+    <div style="font-size:28px;margin-bottom:8px">🏠</div>
+    <h3 style="margin:0 0 8px;font-size:17px">3D Smart Home Is Already Open</h3>
+    <p style="margin:0 0 16px;font-size:13px;color:var(--mut);line-height:1.5">Another browser tab is already running the live 3D Smart Home Showcase. Keeping a single tab open prevents duplicate WebGL GPU load.</p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="back-hb-btn" onclick="closeOrReturnToHb()">Close Duplicate Tab</button>
+      <button class="btn-chip" onclick="takeOverSingleton()">Use This Tab Instead</button>
+    </div>
+  </div>
+</div>
+
+<!-- Top Bar: 1-Click Return to Homebridge + Interactive Tour + Voice Narrator + Theme -->
+<header class="top-bar">
+  <div class="top-left">
+    <button type="button" class="back-hb-btn" onclick="returnToHomebridgeSettings()" title="Focus Homebridge Settings tab and close fullscreen">
+      ← Back to Plugin Settings
+    </button>
+    <span class="brand-title">MiBoxer 3D Smart Home Showcase</span>
+    <span class="brand-tag">Live RF + Virtual Sandbox</span>
+  </div>
+  <div class="top-right">
+    <button type="button" class="btn-chip active" id="btnToggleCoach" onclick="toggleCoachCard()">💡 Interactive Tour (9)</button>
+    <button type="button" class="btn-chip" id="btnVoiceGuide" onclick="toggleVoiceNarrator()" title="Speak interactive tips aloud using browser voice synthesis">🔇 Voice Guide: OFF</button>
+    <button type="button" class="btn-chip" id="btnThemeSwitch" onclick="togglePageTheme()">🌙 Dark</button>
+  </div>
+</header>
+
 <div class="app">
   <div id="vp">
     <div class="hud-top">
       <div class="hud-grp">
-        <span style="font-weight:800;font-size:13px;padding:4px 6px;color:#38bdf8">🏠 MiBoxer 3D Smart Home Twin</span>
-        <button class="chip" onclick="eng.setCam(0,15,19, 0,0.5,2)">Overview</button>
-        <button class="chip" onclick="eng.setCam(-2,11,8, -2,0,-1.5)">Rooms</button>
-        <button class="chip" onclick="eng.setCam(6,8,11, 4.2,0,-1)">Garage</button>
-        <button class="chip" onclick="eng.setCam(0,7,18, 0,0,6.5)">Garden &amp; Gate</button>
-        <button class="chip" onclick="eng.zoomBy(-2.5)">＋</button>
-        <button class="chip" onclick="eng.zoomBy(2.5)">－</button>
+        <button class="btn-chip" onclick="eng.setCam(0,15,19, 0,0.5,2)">🏡 Overview</button>
+        <button class="btn-chip" onclick="eng.setCam(-2,11,8, -2,0,-1.5)">🛋️ Rooms</button>
+        <button class="btn-chip" onclick="eng.setCam(6,8,11, 4.2,0,-1)">🚗 Garage &amp; Mini</button>
+        <button class="btn-chip" onclick="eng.setCam(0,7,18, 0,0,6.5)">🌿 Garden &amp; Gate</button>
+        <button class="btn-chip" onclick="eng.zoomBy(-2.5)">＋</button>
+        <button class="btn-chip" onclick="eng.zoomBy(2.5)">－</button>
       </div>
       <div class="hud-grp">
-        <button class="chip" onclick="sendCmd('scene_mode',{scene:'day'})">☀ Day</button>
-        <button class="chip" onclick="sendCmd('scene_mode',{scene:'sunset'})">🌅 Sunset</button>
-        <button class="chip" onclick="sendCmd('scene_mode',{scene:'night'})">🌙 Night</button>
-        <button class="chip" onclick="sendCmd('scene_mode',{scene:'party'})">🎵 Beat Chase</button>
+        <button class="btn-chip" onclick="sendCmd('scene_mode',{scene:'day'})">☀ Day</button>
+        <button class="btn-chip" onclick="sendCmd('scene_mode',{scene:'sunset'})">🌅 Sunset</button>
+        <button class="btn-chip" onclick="sendCmd('scene_mode',{scene:'night'})">🌙 Night</button>
+        <button class="btn-chip" onclick="sendCmd('scene_mode',{scene:'party'})">🎵 Beat Chase</button>
       </div>
     </div>
 
+    <!-- Docked Interactive Remote Faceplate -->
     <div id="remDock">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11.5px;font-weight:800">🎛️ Live Remotes</span>
-        <span id="rdBadge" style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:99px;background:#1e293b;color:#94a3b8">READY</span>
-        <button class="chip" style="padding:1px 6px" onclick="document.getElementById('remDock').classList.toggle('min')">_</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+        <span style="font-size:11.5px;font-weight:800">🎛️ Try Remote (RF or Click)</span>
+        <span id="rdBadge" style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:99px;background:var(--stage);color:var(--mut);border:1px solid var(--bdr)">READY</span>
+        <button class="btn-chip" style="padding:1px 6px" onclick="document.getElementById('remDock').classList.toggle('min')">_</button>
       </div>
       <div id="remDockBody">
         <div class="rd-tabs" id="rdTabs"></div>
         <div class="rd-zones" id="rdZones"></div>
+        <div id="rdTargetHint"></div>
         <div id="rdSvg"></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:6px"><span>🟢 Physical RF</span><span>🟠 UI Click</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:6px;font-weight:600">
+          <span>🟢 Physical RF</span><span>🟠 Virtual Click</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- InteractiveGuided Showcase Coach & Voice Narrator Bubble -->
+    <div id="coachCard">
+      <div class="coach-top">
+        <span class="coach-step-pill" id="coachStepLabel">Tip 1 of 9</span>
+        <div style="display:flex;gap:4px">
+          <button type="button" class="btn-chip" style="padding:2px 7px;font-size:10.5px" onclick="demoCurrentStepForMe()" title="Trigger this demo automatically!">▶ Demo It</button>
+          <button type="button" class="btn-chip" style="padding:2px 7px;font-size:10.5px" onclick="toggleCoachCard()">✕</button>
+        </div>
+      </div>
+      <div class="coach-title" id="coachTitle">Physical RF vs. Virtual Clicks</div>
+      <div class="coach-body" id="coachBody"></div>
+      <div class="coach-try" id="coachTry"></div>
+      <div class="coach-done-banner" id="coachDone">✅ Awesome — live action captured!</div>
+      <div class="coach-actions">
+        <button type="button" class="btn-chip" onclick="stepCoach(-1)">← Prev</button>
+        <div class="coach-dots" id="coachDots"></div>
+        <button type="button" class="btn-chip active" onclick="stepCoach(1)">Next Tip →</button>
       </div>
     </div>
 
     <div id="labelsLayer"></div>
-    <div id="toastBar">Drag to Orbit • Right-Drag to Pan • Scroll to Zoom • Press any Physical Remote or Click a 3D Room!</div>
+    <div id="toastBar">💡 <b>Interactive Showcase:</b> Pick up a physical MiBoxer remote, click the virtual remote on the left, or click any 3D room!</div>
   </div>
 
   <aside>
-    <div style="font-size:14px;font-weight:800">10 Virtual Smart Home Targets</div>
-    <div id="sideList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="aside-hdr">
+      <span style="font-size:13.5px;font-weight:800">10 Stateful Smart Home Targets</span>
+      <button class="btn-chip" style="font-size:10.5px;padding:3px 7px" onclick="resetAllDemoDefaults()">↺ Reset House</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--mut);line-height:1.4">Every zone &amp; button below stays stateful over MQTT across Homebridge, HomeKit, and Home Assistant.</div>
+    <div id="sideList" style="display:flex;flex-direction:column;gap:7px"></div>
   </aside>
 </div>
 
 <script src="/miboxer_catalog.js"></script>
 <script src="/three.min.js"></script>
 <script>
-
 function createCutawaySmartHome3D(opts) {
   const vp = opts.viewport;
   const getStateMap = opts.getStateMap;
@@ -550,32 +709,325 @@ function createCutawaySmartHome3D(opts) {
   return { setCam: setCam, zoomBy: zoomBy, pulseBadge: pulseBadge, devExpectedClickHint: devExpectedClickHint };
 }
 
+// ===========================================================================
+// 1. Singleton Tab Coordination + 1-Click Return to Homebridge Plugin Settings
+// ===========================================================================
+const tabId = 'tab_' + Math.random().toString(36).slice(2, 9);
+let isPrimaryTab = true;
+const twinChan = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('milight_twin_singleton') : null;
+
+if (twinChan) {
+  twinChan.postMessage({ type: 'who_is_alive', sender: tabId });
+  twinChan.postMessage({ type: 'twin_alive', sender: tabId });
+  twinChan.onmessage = (ev) => {
+    const d = ev.data || {};
+    if (d.type === 'who_is_alive' && d.sender !== tabId && isPrimaryTab) {
+      twinChan.postMessage({ type: 'i_am_alive', primary: tabId, target: d.sender });
+    } else if (d.type === 'i_am_alive' && d.target === tabId) {
+      // Another :8588 tab is already open! Pause duplicate and prompt user cleanly.
+      isPrimaryTab = false;
+      document.getElementById('dupTabOverlay').classList.add('show');
+    } else if (d.type === 'take_over' && d.sender !== tabId) {
+      isPrimaryTab = false;
+      document.getElementById('dupTabOverlay').classList.add('show');
+    } else if (d.type === 'focus_existing' && isPrimaryTab) {
+      window.focus();
+    }
+  };
+  window.addEventListener('beforeunload', () => {
+    if (isPrimaryTab) twinChan.postMessage({ type: 'twin_closed' });
+  });
+}
+
+function takeOverSingleton() {
+  isPrimaryTab = true;
+  document.getElementById('dupTabOverlay').classList.remove('show');
+  if (twinChan) twinChan.postMessage({ type: 'take_over', sender: tabId });
+}
+
+function getHbReturnUrl() {
+  const q = new URLSearchParams(location.search).get('hb');
+  if (q) return q + '/#!/plugins';
+  return `http://${location.hostname || '192.168.6.196'}:8581/#!/plugins`;
+}
+
+function returnToHomebridgeSettings() {
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.focus();
+      window.close();
+      return;
+    }
+    // Try named parent tab if opener was cleared
+    const parentWin = window.open('', 'milight_hb_settings_parent');
+    if (parentWin && parentWin.location && parentWin.location.href !== 'about:blank') {
+      parentWin.focus();
+      window.close();
+      return;
+    }
+  } catch (_) {}
+  // Fallback if opened directly in the same browser without opener permission
+  window.location.href = getHbReturnUrl();
+}
+function closeOrReturnToHb() {
+  window.close();
+  setTimeout(() => { if (!window.closed) returnToHomebridgeSettings(); }, 150);
+}
+
+// ===========================================================================
+// 2. Light / Dark Theme Sync (Matches Hub & Homebridge Light Default)
+// ===========================================================================
+function syncThemeBtn() {
+  const isDark = document.body.classList.contains('dark');
+  const btn = document.getElementById('btnThemeSwitch');
+  if (btn) btn.textContent = isDark ? '☀ Light' : '🌙 Dark';
+}
+function togglePageTheme() {
+  const nextDark = !document.body.classList.contains('dark');
+  document.body.className = nextDark ? 'dark' : '';
+  try { localStorage.setItem('theme', nextDark ? 'dark' : 'light'); } catch (_) {}
+  syncThemeBtn();
+}
+syncThemeBtn();
+
+// ===========================================================================
+// 3. Interactive 8-Step Guided Showcase Coach + Optional Voice Narrator
+// ===========================================================================
+const SHOWCASE_STEPS = [
+  {
+    title: 'Dual-Source RF & Virtual Remote',
+    body: 'Every button press is color-coded so you can verify hardware vs. software instantly: Physical 2.4GHz RF flashes Emerald Green, while virtual screen clicks flash Amber.',
+    tryHtml: '👉 <b>Try it:</b> Press <b>Zone 1 ON</b> on your physical remote — or click <b>Z1</b> then <b>ON</b> on the docked remote!',
+    voice: 'Welcome to the 3D Smart Home Showcase. Press Zone 1 ON on your physical Mi-Light remote, or click Zone 1 on the virtual remote on the left. Physical radio presses glow emerald green, while screen clicks glow amber.',
+    cam: [0, 15, 19, 0, 0.5, 2],
+    zone: 1,
+    demoCmd: () => triggerDemoVirtual(1, 'on', 100),
+    match: (ev) => Number(ev.zone) === 1 && (ev.action === 'on' || ev.action === 'off')
+  },
+  {
+    title: '0–100% Capacitive Slider Normalization',
+    body: 'Physical MiBoxer touch sliders only transmit 24% to 100% raw brightness. The plugin automatically recalibrates that span to smooth 0% to 100% travel!',
+    tryHtml: '👉 <b>Try it:</b> Select <b>Z2 (Study Blinds)</b> and slide the <b>Brightness Bar</b> all the way down &amp; up.',
+    voice: 'Physical MiBoxer touch sliders normally bottom out at twenty-four percent. Select Zone 2 for the Study Blinds and slide brightness from bottom to top to see full zero to one hundred percent window travel.',
+    cam: [1.5, 9, 10, 1.5, 1.2, 0.5],
+    zone: 2,
+    demoCmd: () => triggerDemoVirtual(2, 'brightness', 35),
+    match: (ev) => (Number(ev.zone) === 2 || Number(ev.zone) === 1) && ev.action === 'brightness'
+  },
+  {
+    title: 'S+ & S- Multi-Function Button Demo',
+    body: 'Buttons like S+ and S- normally sit idle on non-lighting zones. Here they act as stateful multi-function toggles & mood cyclers for the 4 Driveway Bollards!',
+    tryHtml: '👉 <b>Try it:</b> While on Zone 1–3, tap <b>S+</b> to toggle Bollards ON/OFF, or tap <b>S-</b> to cycle 5 architectural light moods!',
+    voice: 'Buttons like S plus and S minus don’t have to go to waste. Tap S plus on any non-fan zone to toggle the driveway bollard lights on and off, or tap S minus to cycle through five color presets.',
+    cam: [1.2, 6.5, 16.5, 2.2, 0.6, 6.0],
+    zone: 1,
+    demoCmd: () => triggerDemoVirtual(1, 'mode_speed_down', 0),
+    match: (ev) => ev.action === 'mode_speed_up' || ev.action === 'mode_speed_down'
+  },
+  {
+    title: 'Color Wheel -> Split AC Climate Control',
+    body: 'On Zone 3 (Bedroom Split AC), touching cool blues vs. warm reds on the remote Color Ring switches the AC between 19°C Cooling and 25°C Heating airflow!',
+    tryHtml: '👉 <b>Try it:</b> Select <b>Z3</b> and touch blue or orange/red on the <b>Color Ring</b> (or slide CCT for exact °C).',
+    voice: 'On Zone 3, the color wheel becomes a climate dial. Touch cool blue on the ring for nineteen degree air conditioning, or warm red for twenty-five degree heating in the bedroom.',
+    cam: [-4.5, 10.5, 5.5, -4.6, 1.2, -3.5],
+    zone: 3,
+    demoCmd: () => triggerDemoVirtual(3, 'hue', 25),
+    match: (ev) => Number(ev.zone) === 3 && (ev.action === 'hue' || ev.action === 'color_temp' || ev.action === 'on')
+  },
+  {
+    title: '5-Panel Overhead Garage & Mini Bay',
+    body: 'Zone 6 maps to the motorized sectional garage door—rolling all 5 articulated panels overhead to reveal the red Mini Cooper inside and turning on the bay light.',
+    tryHtml: '👉 <b>Try it:</b> Select <b>Z6</b> and press <b>ON</b> (or set Brightness to 50% for half-open ventilation).',
+    voice: 'Select Zone 6 and press ON to roll the five-panel garage door overhead, turn on the automatic bay light, and reveal the Mini Cooper inside.',
+    cam: [6.2, 7.5, 11.5, 4.3, 1.0, -0.8],
+    zone: 6,
+    demoCmd: () => triggerDemoVirtual(6, 'on', 100),
+    match: (ev) => Number(ev.zone) === 6
+  },
+  {
+    title: 'Sliding Gate & Pop-Up Lawn Sprinklers',
+    body: 'Zones 7 and 8 bring outdoor hardware into the same remote: a sliding driveway gate with flashing warning beacon (Z7) and 4 pop-up lawn sprinklers (Z8).',
+    tryHtml: '👉 <b>Try it:</b> Select <b>Z8</b> and press <b>ON</b> to pop up the 4 irrigation heads across the front lawn!',
+    voice: 'Select Zone 8 and press ON to pop up the four garden sprinklers, or try Zone 7 to slide open the front entrance gate with its amber warning beacon.',
+    cam: [-1.5, 7.2, 17.5, -1.0, 0.5, 6.5],
+    zone: 8,
+    demoCmd: () => triggerDemoVirtual(8, 'on', 100),
+    match: (ev) => Number(ev.zone) === 7 || Number(ev.zone) === 8
+  },
+  {
+    title: 'Zone 0 Master Lockdown & Night Security',
+    body: 'Zone 0 is reserved strictly as the Whole-Home Master switch—closing shades, garage, gate, and sprinklers in one tap, or arming Night Mode on long-press OFF.',
+    tryHtml: '👉 <b>Try it:</b> Select <b>All (Zone 0)</b> and tap <b>OFF</b> (or hold physical Master OFF for Night Mode).',
+    voice: 'Zone zero acts as your whole-home master switch. Tap All OFF to close the curtains, blinds, garage, gate, and sprinklers simultaneously.',
+    cam: [0, 15, 19, 0, 0.5, 2],
+    zone: 0,
+    demoCmd: () => triggerDemoVirtual(0, 'off', 0),
+    match: (ev) => Number(ev.zone) === 0
+  },
+  {
+    title: 'Direct 3D Raycast Clicks & Beat Mode',
+    body: 'Everything is two-way stateful: you can also click directly on any 3D object or floating room badge—or press M (Mode) to cycle Day, Sunset, Night, and Beat Chase!',
+    tryHtml: '👉 <b>Try it:</b> Click any <b>3D Room Badge</b> directly in the scene, or tap <b>🎵 Beat Chase</b> in the top-right!',
+    voice: 'Finally, every device is two-way interactive. Click directly on any 3D room badge or furniture item to toggle it, or tap M Mode to launch the synchronized Beat Chase.',
+    cam: [0, 14, 18.5, 0, 0.5, 2],
+    zone: 4,
+    demoCmd: () => sendCmd('scene_mode', { scene: 'party', on: true }),
+    match: (ev) => ev.action === 'mode' || ev.source === 'direct3d'
+  }
+];
+
+let coachIdx = 0, coachOpen = true, voiceEnabled = false;
+const completedSteps = new Set();
+
+function speakCoachText(txt) {
+  if (!voiceEnabled || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.rate = 1.03;
+    u.pitch = 1.0;
+    window.speechSynthesis.speak(u);
+  } catch (_) {}
+}
+
+function toggleVoiceNarrator() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('btnVoiceGuide');
+  btn.classList.toggle('voice-on', voiceEnabled);
+  btn.textContent = voiceEnabled ? '🔊 Voice Guide: ON' : '🔇 Voice Guide: OFF';
+  if (voiceEnabled && coachOpen) {
+    speakCoachText(SHOWCASE_STEPS[coachIdx].voice);
+  } else if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+function toggleCoachCard() {
+  coachOpen = !coachOpen;
+  document.getElementById('coachCard').classList.toggle('hidden', !coachOpen);
+  document.getElementById('btnToggleCoach').classList.toggle('active', coachOpen);
+  if (!coachOpen && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+function renderCoachStep(flyCamera) {
+  const s = SHOWCASE_STEPS[coachIdx];
+  document.getElementById('coachStepLabel').textContent = `Interactive Tip ${coachIdx + 1} of ${SHOWCASE_STEPS.length}`;
+  document.getElementById('coachTitle').textContent = s.title;
+  document.getElementById('coachBody').textContent = s.body;
+  document.getElementById('coachTry').innerHTML = s.tryHtml;
+  document.getElementById('coachDone').classList.toggle('show', completedSteps.has(coachIdx));
+  document.getElementById('coachDots').innerHTML = SHOWCASE_STEPS.map((_, i) =>
+    `<span class="cdot ${i === coachIdx ? 'active' : ''} ${completedSteps.has(i) ? 'done' : ''}" onclick="jumpCoach(${i})"></span>`
+  ).join('');
+
+  if (flyCamera && window.eng && s.cam) {
+    eng.setCam(s.cam[0], s.cam[1], s.cam[2], s.cam[3], s.cam[4], s.cam[5]);
+  }
+  if (flyCamera && remotes.length && s.zone !== undefined) {
+    const cur = remotes[selRem] || remotes[0];
+    zonesByDev[getDevId(cur)] = s.zone;
+    renderDock();
+  }
+  if (flyCamera && voiceEnabled) speakCoachText(s.voice);
+}
+
+function stepCoach(dir) {
+  coachIdx = (coachIdx + dir + SHOWCASE_STEPS.length) % SHOWCASE_STEPS.length;
+  renderCoachStep(true);
+}
+function jumpCoach(i) {
+  coachIdx = i;
+  renderCoachStep(true);
+}
+function checkCoachProgress(evObj) {
+  const s = SHOWCASE_STEPS[coachIdx];
+  if (s && s.match && s.match(evObj)) {
+    completedSteps.add(coachIdx);
+    const card = document.getElementById('coachCard');
+    document.getElementById('coachDone').classList.add('show');
+    card.classList.add('celebrate');
+    setTimeout(() => card.classList.remove('celebrate'), 1100);
+    renderCoachStep(false);
+  }
+}
+
+async function triggerDemoVirtual(z, action, val) {
+  const cur = remotes[selRem] || remotes[0];
+  if (!cur) return;
+  const devId = getDevId(cur), rtype = cur.remote_type || 'fut089';
+  zonesByDev[devId] = z;
+  flashDock(devId, action, z, 'ui', val);
+  await fetch('/api/virtual_send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_id: devId, remote_type: rtype, group_id: z, action, value: val })
+  });
+}
+function demoCurrentStepForMe() {
+  const s = SHOWCASE_STEPS[coachIdx];
+  if (s && s.demoCmd) s.demoCmd();
+}
+
+// ===========================================================================
+// 4. 3D Cutaway Engine, Docked Remote & Live SSE Stream
+// ===========================================================================
 const stateMap = new Map();
 let remotes = [], selRem = 0, zonesByDev = {};
 const ACT_TO_SVG = { on:['on'], off:['off'], brightness:['brightness'], saturation:['saturation','kelvin'], color_temp:['kelvin','saturation'], kelvin:['kelvin','saturation'], hue:['hue'], mode_speed_up:['mode_speed_up','speed_up'], mode_speed_down:['mode_speed_down','speed_down'], set_white:['set_white'], mode:['mode','next_mode'], night_mode:['off','night_mode'] };
 
-document.getElementById('remDock').addEventListener('pointerdown', (e)=>e.stopPropagation());
-document.getElementById('remDock').addEventListener('wheel', (e)=>e.stopPropagation());
+const DEVICE_TIPS = {
+  z1_curtains:   'Z1 ON/OFF or Brightness 0–100%',
+  z2_blinds:     'Z2 ON/OFF or Brightness 0–100%',
+  z3_ac:         'Z3 Color Ring (Cool/Heat) & CCT (°C)',
+  z4_fan:        'Z4 Brightness or S+/S- Fan RPM %',
+  z5_radiator:   'Z5 ON/OFF or Brightness Valve %',
+  z6_garage:     'Z6 Roll 5-Panel Door + Mini Bay Light',
+  z7_gate:       'Z7 Slide Gate + Flashing Beacon',
+  z8_sprinklers: 'Z8 Pop-Up 4 Lawn Water Arcs',
+  z0_driveway:   'Press S+ (Toggle) or S- (5 Moods)',
+  scene_mode:    'Press M (Mode) to Cycle Scenes'
+};
+
+['remDock', 'coachCard'].forEach((id) => {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', (e) => e.stopPropagation());
+  el.addEventListener('wheel', (e) => e.stopPropagation());
+});
+
+function showToast(html) {
+  const tb = document.getElementById('toastBar');
+  if (tb._t) clearTimeout(tb._t);
+  tb.innerHTML = html;
+  tb.classList.add('active');
+  tb._t = setTimeout(() => tb.classList.remove('active'), 1100);
+}
 
 async function sendCmd(id, patch) {
-  await fetch('/api/command', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(Object.assign({ id }, patch)) });
+  await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id }, patch)) });
+}
+
+async function resetAllDemoDefaults() {
+  await fetch('/api/routing/reset_defaults', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  showToast('↺ <b>Reset Complete:</b> All 10 Virtual Smart Home devices restored to initial demo positions.');
 }
 
 const eng = createCutawaySmartHome3D({
   viewport: document.getElementById('vp'),
-  darkDefault: false,
+  darkDefault: document.body.classList.contains('dark'),
   labelsLayer: document.getElementById('labelsLayer'),
   getStateMap: () => stateMap,
   onToggleDevice: (id, expTxt) => {
     const d = stateMap.get(id); if (!d) return;
     const patch = d.position !== undefined ? { position: d.position > 10 ? 0 : 100, open: !(d.position > 10) } : (d.active !== undefined ? { active: !d.active } : { on: !d.on });
-    document.getElementById('toastBar').innerHTML = `🟠 <b>[3D Direct Click]</b> ${d.name.replace('[Virtual] ','')} &nbsp;➔&nbsp; <b style="color:#ea580c">${expTxt || 'Toggled'}</b>`;
+    showToast(`🟠 <b>[3D Direct Click]</b> ${d.name.replace('[Virtual] ','')} &nbsp;➔&nbsp; <b style="color:var(--hb-orange)">${expTxt || 'Toggled'}</b>`);
     eng.pulseBadge(id, expTxt || 'Toggled');
+    checkCoachProgress({ source: 'direct3d', action: 'toggle', id });
     sendCmd(id, patch);
   }
 });
+window.eng = eng;
 
-function getDevId(r){ return Number(r.device_id || r.id || parseInt(String(r.hex_id||r.hex||'0').replace(/^0x/i,''),16) || 0); }
+function getDevId(r) { return Number(r.device_id || r.id || parseInt(String(r.hex_id || r.hex || '0').replace(/^0x/i,''), 16) || 0); }
 
 function renderSidebar() {
   const box = document.getElementById('sideList');
@@ -586,23 +1038,41 @@ function renderSidebar() {
                  : (d.speed !== undefined ? `<input type="range" min="0" max="100" value="${d.speed||0}" onchange="sendCmd('${d.id}',{speed:Number(this.value),active:Number(this.value)>0})">` : '');
     const toggleObj = isPos ? `{position:${isOn?0:100},open:${!isOn}}` : (d.active !== undefined ? `{active:${!isOn}}` : `{on:${!isOn}}`);
     return `<div class="dcard">
-      <div class="dcard-hdr"><span>${d.name.replace('[Virtual] ','')}</span><button class="chip" style="background:${isOn?'#16a34a':'#334155'}" onclick="eng.pulseBadge('${d.id}');sendCmd('${d.id}',${toggleObj})">${isOn?'ON / OPEN':'OFF'}</button></div>
+      <div class="dcard-hdr">
+        <span>${d.name.replace('[Virtual] ','')}</span>
+        <button class="btn-chip ${isOn ? 'active' : ''}" style="padding:2px 8px;font-size:10.5px;${isOn ? 'background:var(--rf);border-color:var(--rf);color:#fff' : ''}" onclick="eng.pulseBadge('${d.id}');sendCmd('${d.id}',${toggleObj})">${isOn ? 'ON / OPEN' : 'OFF'}</button>
+      </div>
+      <div class="dcard-tip">${DEVICE_TIPS[d.id] || ''}</div>
       ${slider}
     </div>`;
   }).join('');
 }
 
+const ZONE_TARGET_NAMES = {
+  0: '🏡 Master All Zones (ON / OFF)',
+  1: '🪟 Z1 Living Curtains',
+  2: '🪟 Z2 Study Blinds & Window',
+  3: '❄️ Z3 Bedroom Split AC',
+  4: '🌀 Z4 Lounge Ceiling Fan',
+  5: '🔥 Z5 Hall Radiator',
+  6: '🚗 Z6 Garage Door & Mini',
+  7: '🚧 Z7 Sliding Entrance Gate',
+  8: '💦 Z8 Garden Sprinklers'
+};
+
 function renderDock() {
   if (!remotes.length || !window.MiBoxerCatalog) return;
   const cur = remotes[selRem] || remotes[0], devId = getDevId(cur), curZ = zonesByDev[devId] ?? 1;
-  document.getElementById('rdTabs').innerHTML = remotes.map((r,i)=>`<button class="rd-btn ${i===selRem?'active':''}" onclick="selRem=${i};renderDock()">${r.visual_model||r.model||'REM'}</button>`).join('');
-  const maxZ = Math.min(Math.max(Number(cur.num_zones||8),1),8);
-  document.getElementById('rdZones').innerHTML = [0,...Array.from({length:maxZ},(_,k)=>k+1)].map((z)=>`<button class="rd-btn ${curZ===z?'active':''}" onclick="zonesByDev[${devId}]=${z};renderDock()">${z===0?'All':'Z'+z}</button>`).join('');
+  document.getElementById('rdTabs').innerHTML = remotes.map((r,i) => `<button class="rd-btn ${i===selRem?'active':''}" onclick="selRem=${i};renderDock()">${r.visual_model||r.model||'REM'}</button>`).join('');
+  const maxZ = Math.min(Math.max(Number(cur.num_zones || 8), 1), 8);
+  document.getElementById('rdZones').innerHTML = [0, ...Array.from({length:maxZ}, (_,k)=>k+1)].map((z) => `<button class="rd-btn ${curZ===z?'active':''}" onclick="zonesByDev[${devId}]=${z};renderDock()">${z===0?'All':'Z'+z}</button>`).join('');
+  document.getElementById('rdTargetHint').textContent = '→ ' + (ZONE_TARGET_NAMES[curZ] || `Zone ${curZ}`);
+
   const vm = cur.visual_model || cur.model || '', rtype = cur.remote_type || 'fut089';
   const mod = MiBoxerCatalog.MODELS.find((m)=>m.id===vm) || MiBoxerCatalog.MODELS.find((m)=>m.proto===rtype) || MiBoxerCatalog.MODELS[0];
   const wrap = document.getElementById('rdSvg');
   wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid:'full3d' });
-  wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el)=>el.classList.add('zone-active'));
+  wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el) => el.classList.add('zone-active'));
   wrap.querySelectorAll('.mbx-hit').forEach((el) => {
     el.onclick = async (e) => {
       e.stopPropagation();
@@ -612,53 +1082,67 @@ function renderDock() {
       let val = el.getAttribute('data-val') !== null ? Number(el.getAttribute('data-val')) : undefined;
       if (val === undefined) {
         const rect = el.getBoundingClientRect();
-        if (act === 'hue' && rect.width) { let deg = Math.round((Math.atan2(e.clientY-(rect.top+rect.height/2), e.clientX-(rect.left+rect.width/2))*180)/Math.PI+90); if(deg<0)deg+=360; val=deg%360; }
-        else if (rect.width) { const f = rect.height>rect.width*1.3 ? (1-(e.clientY-rect.top)/rect.height) : ((e.clientX-rect.left)/rect.width); const rp = Math.max(0,Math.min(100,Math.round(f*100))); val = rp <= 6 ? 0 : (rp >= 94 ? 100 : rp); }
-        else val = 100;
+        if (act === 'hue' && rect.width) {
+          let deg = Math.round((Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2)) * 180) / Math.PI + 90);
+          if (deg < 0) deg += 360;
+          val = deg % 360;
+        } else if (rect.width) {
+          const f = rect.height > rect.width * 1.3 ? (1 - (e.clientY - rect.top) / rect.height) : ((e.clientX - rect.left) / rect.width);
+          const rp = Math.max(0, Math.min(100, Math.round(f * 100)));
+          val = rp <= 6 ? 0 : (rp >= 94 ? 100 : rp);
+        } else val = 100;
       }
       const apiAct = act === 'kelvin' ? 'color_temp' : act;
-      flashDock(devId, apiAct, zonesByDev[devId]??1, 'ui', val);
-      await fetch('/api/virtual_send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ device_id:devId, remote_type:rtype, group_id:zonesByDev[devId]??1, action:apiAct, value:val }) });
+      flashDock(devId, apiAct, zonesByDev[devId] ?? 1, 'ui', val);
+      await fetch('/api/virtual_send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ device_id:devId, remote_type:rtype, group_id:zonesByDev[devId] ?? 1, action:apiAct, value:val }) });
     };
   });
 }
 
 function flashDock(devId, act, zone, src, val) {
-  const idx = remotes.findIndex((r)=>getDevId(r)===Number(devId));
+  const idx = remotes.findIndex((r) => getDevId(r) === Number(devId));
   if (idx >= 0 && idx !== selRem) selRem = idx;
   zonesByDev[devId] = Number(zone);
   renderDock();
   const isRf = src !== 'ui', cls = isRf ? 'fire-rf' : 'fire-ui';
   const wrap = document.getElementById('rdSvg');
-  (ACT_TO_SVG[act]||[act]).forEach((a)=>wrap.querySelectorAll(`.mbx-hit[data-act="${a}"]`).forEach((el)=>{ el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),750); }));
-  wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${zone}"]`).forEach((el)=>{ el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),750); });
-  const dk = document.getElementById('remDock'); dk.classList.remove('hit-rf','hit-ui'); dk.classList.add(isRf?'hit-rf':'hit-ui'); setTimeout(()=>dk.classList.remove('hit-rf','hit-ui'),750);
-  const bd = document.getElementById('rdBadge'); bd.style.background=isRf?'#14532d':'#78350f'; bd.style.color='#fff'; bd.textContent=isRf?'🟢 PHYSICAL RF':'🟠 UI CLICK';
+  (ACT_TO_SVG[act] || [act]).forEach((a) => wrap.querySelectorAll(`.mbx-hit[data-act="${a}"]`).forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 750); }));
+  wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${zone}"]`).forEach((el) => { el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 750); });
+  const dk = document.getElementById('remDock'); dk.classList.remove('hit-rf','hit-ui'); dk.classList.add(isRf ? 'hit-rf' : 'hit-ui'); setTimeout(() => dk.classList.remove('hit-rf','hit-ui'), 750);
+  const bd = document.getElementById('rdBadge');
+  bd.style.background = isRf ? 'var(--rf-soft)' : 'var(--ui-soft)';
+  bd.style.color = isRf ? 'var(--rf)' : 'var(--ui)';
+  bd.textContent = isRf ? '🟢 PHYSICAL RF' : '🟠 UI CLICK';
 }
 
 async function boot() {
   const [st, rList] = await Promise.all([
-    fetch('/api/state').then((r)=>r.json()).catch(()=>({})),
-    fetch('/api/remotes').then((r)=>r.json()).catch(()=>[])
+    fetch('/api/state').then((r) => r.json()).catch(() => ({})),
+    fetch('/api/remotes').then((r) => r.json()).catch(() => [])
   ]);
-  (st.devices||[]).forEach((d)=>stateMap.set(d.id, d));
+  (st.devices || []).forEach((d) => stateMap.set(d.id, d));
   remotes = Array.isArray(rList) ? rList : (st.remotes || []);
-  const b8 = remotes.findIndex((r)=>String(r.visual_model||r.model||'').toUpperCase().includes('B8')); if (b8>=0) selRem = b8;
-  renderSidebar(); renderDock();
+  const b8 = remotes.findIndex((r) => String(r.visual_model || r.model || '').toUpperCase().includes('B8'));
+  if (b8 >= 0) selRem = b8;
+  renderSidebar();
+  renderDock();
+  renderCoachStep(false);
 
   const es = new EventSource('/api/stream');
-  es.addEventListener('init', (e)=>{ const j=JSON.parse(e.data); (j.devices||[]).forEach((d)=>stateMap.set(d.id,d)); renderSidebar(); });
-  es.addEventListener('state_patch', (e)=>{ const j=JSON.parse(e.data); if(j.device){ stateMap.set(j.device.id,j.device); renderSidebar(); } });
-  es.addEventListener('rf_event', (e)=>{
+  es.addEventListener('init', (e) => { const j = JSON.parse(e.data); (j.devices || []).forEach((d) => stateMap.set(d.id, d)); renderSidebar(); });
+  es.addEventListener('state_patch', (e) => { const j = JSON.parse(e.data); if (j.device) { stateMap.set(j.device.id, j.device); renderSidebar(); } });
+  es.addEventListener('rf_event', (e) => {
     const j = JSON.parse(e.data);
-    (j.updated||[]).forEach((d)=>{ stateMap.set(d.id,d); eng.pulseBadge(d.id, j.event?.action?.toUpperCase()); });
+    (j.updated || []).forEach((d) => { stateMap.set(d.id, d); eng.pulseBadge(d.id, j.event?.action?.toUpperCase()); });
     renderSidebar();
     if (j.event) {
-      const ev = j.event, devId = ev.device_id || parseInt(String(ev.hex||'0').replace(/^0x/i,''),16) || 0;
+      const ev = j.event, devId = ev.device_id || parseInt(String(ev.hex || '0').replace(/^0x/i,''), 16) || 0;
       flashDock(devId, ev.action, ev.zone, ev.source || 'rf', ev.value);
-      const tag = ev.source === 'ui' ? '🟠 [UI Click]' : '🟢 [Physical RF]';
-      const updNames = (j.updated||[]).map((u)=>u.name.replace('[Virtual] ','')).join(', ') || 'No Sandbox Target';
-      document.getElementById('toastBar').innerHTML = `<b>${tag}</b> ${ev.remoteName||ev.hex} • Zone ${ev.zone} <code>${ev.action}${ev.value!==undefined?'('+ev.value+(ev.pct!==undefined?' → '+ev.pct+'%':'')+')':''}</code> &nbsp;➔&nbsp; <b style="color:#ea580c">${updNames}</b>`;
+      checkCoachProgress(ev);
+      const tag = ev.source === 'ui' ? '🟠 [Virtual Click]' : '🟢 [Physical RF]';
+      const updNames = (j.updated || []).map((u) => u.name.replace('[Virtual] ','')).join(', ') || 'No Sandbox Target';
+      const gBadge = ev.gesture === 'double' ? ' <b style="color:#0284c7">[2× DOUBLE TAP]</b>' : (ev.gesture === 'triple' ? ' <b style="color:#7c3aed">[3× TRIPLE TAP]</b>' : (ev.gesture === 'long' ? ' <b style="color:#ea580c">[⏱ LONG PRESS]</b>' : ''));
+      showToast(`<b>${tag}</b>${gBadge} ${ev.remoteName || ev.hex} • Zone ${ev.zone} <code>${ev.action}${ev.value !== undefined ? '(' + ev.value + (ev.pct !== undefined ? ' → ' + ev.pct + '%' : '') + ')' : ''}</code> &nbsp;➔&nbsp; <b style="color:var(--hb-orange)">${updNames}</b>`);
     }
   });
 }
