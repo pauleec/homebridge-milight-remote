@@ -204,7 +204,79 @@ class SmartHomeTwinEngine extends EventEmitter {
       else if (topic.endsWith('/event')) { if (!isRetained) this._onRemoteEvent(topic, payload); }
     });
     this.mqtt.connect();
+    this.hubLinksByPhysHex = new Map();
+    this._refreshHubLinks();
+    setInterval(() => this._refreshHubLinks(), 4000);
     this._startHttpServer();
+  }
+
+  _refreshHubLinks() {
+    const req = http.get(`${this.hubUrl}/api/remotes`, { timeout: 2500 }, (res) => {
+      let b = ''; res.on('data', (c) => (b += c));
+      res.on('end', () => {
+        try {
+          const arr = JSON.parse(b);
+          const nextMap = new Map();
+          for (const r of (Array.isArray(arr) ? arr : [])) {
+            const lHex = String(r.linked_hex_id || '').toUpperCase();
+            if (lHex) {
+              if (!nextMap.has(lHex)) nextMap.set(lHex, []);
+              nextMap.get(lHex).push(r);
+            }
+          }
+          this.hubLinksByPhysHex = nextMap;
+        } catch (_) {}
+      });
+    });
+    req.on('error', () => {}); req.on('timeout', () => req.destroy());
+  }
+
+  _mapLinkedSegment(linkedRem, act, val, z) {
+    const tz = (linkedRem && linkedRem.touch_zones) || {};
+    const cal = (linkedRem && linkedRem.calibration) || {};
+    const zBit = z < 16 ? (1 << z) : 0x8000;
+    const a = String(act || '').toLowerCase();
+    const numVal = (val !== undefined && val !== null && val !== '') ? Number(val) : -1;
+
+    if (a === 'hue' && numVal >= 0 && tz.hue_ring && tz.hue_ring.enabled && ((tz.hue_ring.zone_mask ?? 65535) & zBit)) {
+      const n = Math.min(12, Math.max(2, Number(tz.hue_ring.segments || 4)));
+      const span = 360 / n;
+      let h = numVal > 360 ? (numVal / 255) * 360 : numVal;
+      h = ((h % 360) + 360) % 360;
+      let deg = (270 - h + 360) % 360;
+      if (cal.hue_invert) deg = (360 - deg) % 360;
+      if (cal.hue_offset) deg = (deg + Number(cal.hue_offset) + 360) % 360;
+      const rel = ((deg - Number(tz.hue_ring.offset_deg || 0)) % 360 + 360) % 360;
+      return `hue_seg_${Math.min(n, Math.max(1, Math.floor(rel / span) + 1))}`;
+    }
+
+    let targetBar = null, pref = '';
+    if (a === 'saturation' && tz.sat_bar && tz.sat_bar.enabled && ((tz.sat_bar.zone_mask ?? 65535) & zBit)) {
+      targetBar = tz.sat_bar; pref = 'sat_seg_';
+    } else if ((a === 'color_temp' || a === 'kelvin') && tz.cct_bar && tz.cct_bar.enabled && ((tz.cct_bar.zone_mask ?? 65535) & zBit)) {
+      targetBar = tz.cct_bar; pref = 'cct_seg_';
+    } else if ((a === 'color_temp' || a === 'kelvin') && tz.sat_bar && tz.sat_bar.enabled && ((tz.sat_bar.zone_mask ?? 65535) & zBit)) {
+      targetBar = tz.sat_bar; pref = 'sat_seg_';
+    } else if ((a === 'brightness' || a === 'level') && tz.bri_bar && tz.bri_bar.enabled && ((tz.bri_bar.zone_mask ?? 65535) & zBit)) {
+      targetBar = tz.bri_bar; pref = 'bri_seg_';
+    }
+
+    if (targetBar && numVal >= 0) {
+      const n = Math.min(6, Math.max(2, Number(targetBar.segments || 4)));
+      const rawPct = numVal > 100 ? (numVal / 255) * 100 : Math.max(0, Math.min(100, numVal));
+      if (pref === 'sat_seg_') {
+        const fromTopIdx = Math.min(n - 1, Math.max(0, Math.floor((rawPct / 100.0001) * n)));
+        const idx = (n - 1) - fromTopIdx;
+        return `sat_seg_${idx + 1}`;
+      }
+      let effPct = rawPct;
+      if (pref === 'bri_seg_') {
+        effPct = rawPct <= 26.5 ? 0 : (rawPct >= 98 ? 100 : ((rawPct - 26.5) / (98 - 26.5)) * 100);
+      }
+      const idx = Math.min(n - 1, Math.max(0, Math.floor((effPct / 100.0001) * n)));
+      return `${pref}${idx + 1}`;
+    }
+    return act;
   }
 
   _onRegistry(payload) {
@@ -243,7 +315,12 @@ class SmartHomeTwinEngine extends EventEmitter {
     const z = parseInt(zStr, 10);
     let data;
     try { data = JSON.parse(payload); } catch (_) { data = { action: String(payload).trim() }; }
-    const act = String(data.action || data.command || '').toLowerCase();
+    let rawActHold = String(data.action || data.command || '').toLowerCase();
+    if (rawActHold.endsWith('_hold')) {
+      rawActHold = rawActHold.slice(0, -5);
+      data.gesture = 'long';
+    }
+    const act = rawActHold;
     const val = (data.value !== undefined) ? Number(data.value) : undefined;
 
     const mark = this.uiTxMarks.get(`${rem.hex}:${z}`);
@@ -328,9 +405,126 @@ class SmartHomeTwinEngine extends EventEmitter {
     };
     if (this.mqtt) this.mqtt.publish('milight/ha_events', JSON.stringify(this.lastEvent), false);
 
-    const touched = this._applySandboxMappedAction(rem.hex, z, normAct, val, normPct, gesture);
+    let touched = this._applySandboxMappedAction(rem.hex, z, normAct, val, normPct, gesture);
+    const linkedList = (this.hubLinksByPhysHex && this.hubLinksByPhysHex.get(String(rem.hex || '').toUpperCase())) || [];
+    if (srcKind === 'rf' && linkedList.length) {
+      this.lastEvent.linkedTargets = linkedList.map((lr) => ({
+        device_id: lr.device_id,
+        hex: lr.hex_id,
+        action: this._mapLinkedSegment(lr, normAct, val, z)
+      }));
+      for (const lr of linkedList) {
+        const mappedAct = this._mapLinkedSegment(lr, normAct, val, z);
+        const extraTouched = this._applySandboxMappedAction(lr.hex_id, z, mappedAct, val, normPct, gesture);
+        for (const d of extraTouched) {
+          if (!touched.some((x) => x.id === d.id)) touched.push(d);
+        }
+      }
+    }
     const firedRules = this._executeMatchingRealRules(rem.hex, z, normAct, val, normPct, gesture);
     this._broadcastSse('rf_event', { event: this.lastEvent, updated: touched, firedRules });
+  }
+
+  _applyShowcaseMultimodal(remoteHex, z, act, val, touch, gesture) {
+    const hx = String(remoteHex || '').toUpperCase();
+    if (hx !== '0X3DB0' && hx !== '0X3DB4' && hx !== '0X3DB8') return null;
+    if (!this.multiStepMap) this.multiStepMap = new Map();
+    const isHold = (gesture === 'long' || val === 0);
+
+    const stepOrToggle = (key, maxSteps, applyStepFn, toggleFn) => {
+      const cur = this.multiStepMap.get(key) || 0;
+      if (isHold) {
+        toggleFn();
+      } else {
+        const next = (cur % maxSteps) + 1;
+        this.multiStepMap.set(key, next);
+        applyStepFn(next, maxSteps);
+      }
+    };
+
+    // Left 3-Slot Scene Strip on 0x3DB0 & 0x3DB8 (Day / Sunset / Party)
+    if (act === 'sat_seg_1') { touch('scene_mode', { scene: 'day', on: false }); touch('z0_driveway', { on: true, bri: 95, ct: 220, sat: 0, colorMode: 'ct', presetName: 'Daylight' }); return true; }
+    if (act === 'sat_seg_2') { touch('scene_mode', { scene: 'sunset', on: true }); touch('z0_driveway', { on: true, bri: 88, hue: 30, sat: 90, colorMode: 'hs', presetName: 'Sunset Lounge' }); return true; }
+    if (act === 'sat_seg_3') { touch('scene_mode', { scene: 'party', on: true }); return true; }
+
+    // 0x3DB0 (1-Zone B0 Multi-Device Suite) & 0x3DB4 (4-Room Hybrid Top Strip)
+    if (hx === '0X3DB0' || (hx === '0X3DB4' && /^hue_seg_[1-4]$/.test(act))) {
+      if (act === 'hue_seg_1') {
+        const d = this.devices.get('z4_fan');
+        stepOrToggle(`${hx}:fan`, 6,
+          (s) => touch('z4_fan', { active: true, speed: Math.round((s / 6) * 100) }),
+          () => touch('z4_fan', { active: !d.active, speed: !d.active ? 65 : 0 })
+        );
+        return true;
+      }
+      if (act === 'hue_seg_2') {
+        const d = this.devices.get('z1_curtains');
+        stepOrToggle(`${hx}:curt`, 4,
+          (s) => touch('z1_curtains', { open: true, position: s * 25 }),
+          () => touch('z1_curtains', { open: !(d.position > 5), position: d.position > 5 ? 0 : 100 })
+        );
+        return true;
+      }
+      if (act === 'hue_seg_3') {
+        const d = this.devices.get('z2_blinds');
+        stepOrToggle(`${hx}:blind`, 4,
+          (s) => touch('z2_blinds', { open: true, position: s * 25 }),
+          () => touch('z2_blinds', { open: !(d.position > 5), position: d.position > 5 ? 0 : 100 })
+        );
+        return true;
+      }
+      if (act === 'hue_seg_4') {
+        const d = this.devices.get('z3_ac');
+        const acSteps = [
+          { hvacMode: 'cool', targetTemp: 18, fanPct: 90 },
+          { hvacMode: 'cool', targetTemp: 20, fanPct: 65 },
+          { hvacMode: 'cool', targetTemp: 22, fanPct: 45 },
+          { hvacMode: 'heat', targetTemp: 25, fanPct: 60 },
+          { hvacMode: 'heat', targetTemp: 27, fanPct: 85 }
+        ];
+        stepOrToggle(`${hx}:ac`, 5,
+          (s) => touch('z3_ac', Object.assign({ active: true }, acSteps[s - 1])),
+          () => touch('z3_ac', { active: !d.active, hvacMode: !d.active ? 'cool' : 'off' })
+        );
+        return true;
+      }
+      if (hx === '0X3DB0') {
+        if (act === 'hue_seg_5') {
+          const d = this.devices.get('z5_radiator');
+          stepOrToggle('0X3DB0:rad', 4,
+            (s) => touch('z5_radiator', { active: true, hvacMode: 'heat', valvePct: s * 25, targetTemp: 18 + s * 2 }),
+            () => touch('z5_radiator', { active: !d.active, hvacMode: !d.active ? 'heat' : 'off', valvePct: !d.active ? 75 : 0 })
+          );
+          return true;
+        }
+        if (act === 'hue_seg_6') {
+          const drv = this.devices.get('z0_driveway');
+          const moods = [
+            { presetName: 'Warm 2700K', colorMode: 'ct', ct: 345, sat: 0, hue: 36, bri: 85 },
+            { presetName: 'Crisp 4000K', colorMode: 'ct', ct: 220, sat: 0, hue: 200, bri: 95 },
+            { presetName: 'Amber Gold', colorMode: 'hs', ct: 290, sat: 92, hue: 34, bri: 90 },
+            { presetName: 'Ocean Cyan', colorMode: 'hs', ct: 220, sat: 90, hue: 190, bri: 88 },
+            { presetName: 'Royal Violet', colorMode: 'hs', ct: 290, sat: 88, hue: 280, bri: 90 }
+          ];
+          stepOrToggle('0X3DB0:drv', 5,
+            (s) => touch('z0_driveway', Object.assign({ on: true, presetIdx: s - 1 }, moods[s - 1])),
+            () => touch('z0_driveway', { on: !drv.on })
+          );
+          return true;
+        }
+        // Bottom R / G / B buttons on B0 mapped to Garage (val=0), Gate (val=120), Lawn Sprinklers (val=240)!
+        if (act === 'hue' && (val === 0 || val === 120 || val === 240)) {
+          if (val === 0)   { const g = this.devices.get('z6_garage');     touch('z6_garage',     { open: !g.open, position: !g.open ? 100 : 0 }); return true; }
+          if (val === 120) { const g = this.devices.get('z7_gate');       touch('z7_gate',       { open: !g.open, position: !g.open ? 100 : 0 }); return true; }
+          if (val === 240) { const s = this.devices.get('z8_sprinklers'); touch('z8_sprinklers', { active: !s.active, flowPct: !s.active ? 85 : 0 }); return true; }
+        }
+        // All On / Lockdown on 1-zone B0
+        if (act === 'on' || act === 'off' || act === 'night_mode') {
+          return 'master_override';
+        }
+      }
+    }
+    return null;
   }
 
   _applySandboxMappedAction(remoteHex, z, act, val, normPct, gesture = 'single') {
@@ -344,6 +538,10 @@ class SmartHomeTwinEngine extends EventEmitter {
       this.emit('deviceUpdated', dev, 'rf');
       changed.push(dev);
     };
+
+    const scRes = this._applyShowcaseMultimodal(remoteHex, z, act, val, touch, gesture);
+    if (scRes === true) return changed;
+    if (scRes === 'master_override') z = 0;
 
     if (act === 'mode' || act === 'next_mode') {
       const sc = this.devices.get('scene_mode');

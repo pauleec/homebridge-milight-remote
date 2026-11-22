@@ -86,6 +86,15 @@
 </style>
 </head>
 <body>
+<div id="hbCustomShowcaseBanner" style="margin:10px 14px 4px;padding:10px 14px;border-radius:9px;border:1px solid rgba(2,132,199,0.35);background:rgba(2,132,199,0.07);font-family:system-ui,sans-serif;font-size:12.5px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
+  <div>
+    <strong>💡 Showcase Tip — Custom Remote Stencils &amp; Multimodal Controls:</strong>
+    Try the 3 Hub-seeded reference remotes (<code>0x3DB0</code> <b>1-Zone Suite B0</b>, <code>0x3DB8</code> <b>8-Room Estate B8</b>, <code>0x3DB4</code> <b>Matte Hybrid B4-B</b>) featuring <b>Short-Tap Step Cycling (1→6)</b> + <b>Long-Hold ON/OFF Toggle</b>, masked unused buttons, and 1:1 printable stencils!
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="http://192.168.6.196:8588" target="_blank" style="padding:5px 10px;border-radius:6px;background:#0284c7;color:#fff;text-decoration:none;font-weight:600;font-size:12px">🏠 Open 3D House Tour (Tips 11–12)</a>
+  </div>
+</div>
 <div class="nav-bar">
   <div class="tabs">
     <button type="button" class="tab-btn active" id="tbtn_remotes" onclick="switchTab('remotes')">🎛️ 1. Remotes (<span id="remCount">0</span>)</button>
@@ -262,9 +271,27 @@
   </div>
 </div>
 <script src="./miboxer_catalog.js"></script>
+<script src="./remote_studio.js"></script>
 <script src="./three.min.js"></script>
 <script>
 const isStandalone8588 = !window.homebridge;
+async function hydrateHubCustomMetadata() {
+  try {
+    if (window.MiBoxerCatalog && MiBoxerCatalog.syncCustomModelsFromHub) {
+      await MiBoxerCatalog.syncCustomModelsFromHub('http://192.168.7.121');
+    }
+    const hr = await fetch('http://192.168.7.121/api/remotes', { cache: 'no-store' });
+    if (hr.ok) {
+      const hubList = await hr.json();
+      const byId = new Map((Array.isArray(hubList) ? hubList : []).map((x) => [Number(x.device_id), x]));
+      if (Array.isArray(remotes) && remotes.length) {
+        remotes = remotes.map((r) => Object.assign({}, r, byId.get(getDevId(r)) || {}));
+      }
+    }
+    if (typeof renderRemotesGrid === 'function' && remotes.length) renderRemotesGrid();
+  } catch (_) {}
+}
+setTimeout(hydrateHubCustomMetadata, 250);
 const apiReq = async (route, body) => {
   if (window.homebridge) return homebridge.request(route, body);
   const map = { '/twin-state':'/api/state', '/routing-get':'/api/routing', '/routing-save':'/api/routing', '/routing-reset':'/api/routing/reset_defaults', '/real-devices':'/api/real_devices', '/test-rule':'/api/test_rule', '/twin-cmd':'/api/command', '/virtual-send':'/api/virtual_send', '/remote-upsert':'/api/remotes' };
@@ -413,7 +440,7 @@ function renderRemotesGrid() {
     const curZ = activeZoneByDev[devId];
     const zBtns = [0,...Array.from({length:maxZ},(_,i)=>i+1)].map((z)=>`<button type="button" class="zpill ${curZ===z?'active':''}" id="zp_${devId}_${z}" onclick="selectZone(${devId},${z})">${z===0?'All':'Z'+z}</button>`).join('');
     return `<div class="rcard" id="rcard_${devId}">
-      <div class="rcard-hdr"><div><div class="rcard-title">${r.name||vm}</div><div class="rcard-sub">${vm} • ${hex} • ${r.remote_type||'fut089'}</div></div><div style="display:flex;gap:4px;align-items:center"><button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="openHbMacroModal(${devId})">🎛️ Zones/Taps</button><span class="src-pill" id="spill_${devId}">READY</span></div></div>
+      <div class="rcard-hdr"><div><div class="rcard-title">${r.name||vm}</div><div class="rcard-sub">${vm} • ${hex} • ${r.remote_type||'fut089'}${r.linked_hex_id ? ' • 🔗 '+r.linked_hex_id : ''}</div></div><div style="display:flex;gap:4px;align-items:center"><button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="openHbMacroModal(${devId})">🎛️ Zones/Taps</button><span class="src-pill" id="spill_${devId}">READY</span></div></div>
       <div class="zpills" id="zpills_${devId}">${zBtns}</div>
       <div class="ztarget-hint" id="zhint_${devId}">&rarr; ${lookupTargetLabel(hex, curZ)}</div>
       <div class="svg-stage" id="stage_${devId}"></div>
@@ -427,10 +454,27 @@ function mountSvgInto(elId, r, uid) {
   const box = document.getElementById(elId); if (!box || !window.MiBoxerCatalog) return;
   const devId = getDevId(r), vm = r.visual_model || r.model || '', rtype = r.remote_type || 'fut089';
   const mod = MiBoxerCatalog.MODELS.find((m)=>m.id===vm) || MiBoxerCatalog.MODELS.find((m)=>m.proto===rtype) || MiBoxerCatalog.MODELS[0];
-  box.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid });
+  box.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid, facia: r.facia, touchZones: r.touch_zones, activeZone: Number(activeZoneByDev[devId] ?? 1) });
   const curZ = Number(activeZoneByDev[devId] ?? 1);
   box.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el)=>el.classList.add('zone-active'));
   renderSvgSegmentOverlays(box, r, devId, rtype, curZ);
+  box.querySelectorAll('.mbx-seg-hit').forEach((segEl) => {
+    if (segEl.onclick) return;
+    segEl.style.cursor = 'pointer';
+    segEl.onclick = (e) => {
+      e.stopPropagation();
+      const segAct = segEl.getAttribute('data-seg-act') || '';
+      if (!segAct) return;
+      const zNow = Number(activeZoneByDev[devId] ?? 1);
+      const mIdx = segAct.match(/_(\d+)$/);
+      const segNum = mIdx ? Number(mIdx[1]) : 1;
+      const padCfg = (r.facia && r.facia.pads && r.facia.pads[segAct]) || {};
+      const dispVal = padCfg.label ? `"${padCfg.label}"` : segNum;
+      localUiSuppress[`${devId}:${zNow}`] = Date.now();
+      triggerVisualFeedback(devId, segAct, zNow, 'ui', dispVal);
+      apiReq('/virtual-send', { device_id: devId, remote_type: rtype, group_id: zNow, action: segAct, value: segNum });
+    };
+  });
   box.querySelectorAll('.mbx-hit').forEach((el) => {
     let holdT = null, heldFired = false;
     el.onpointerdown = (e) => {
@@ -469,7 +513,7 @@ function mountSvgInto(elId, r, uid) {
           val = act === 'kelvin' ? Math.round(153 + (pct / 100) * 217) : pct;
         } else { val = 100; }
       }
-      const apiAct = act === 'kelvin' ? 'color_temp' : act;
+      const apiAct = act === 'kelvin' ? 'color_temp' : (act === 'zone_on' ? 'on' : (act === 'zone_off' ? 'off' : act));
       localUiSuppress[`${devId}:${activeZoneByDev[devId]}`] = Date.now();
       triggerVisualFeedback(devId, apiAct, activeZoneByDev[devId], 'ui', val);
       apiReq('/virtual-send', { device_id:devId, remote_type:rtype, group_id:activeZoneByDev[devId]??1, action:apiAct, value:val });

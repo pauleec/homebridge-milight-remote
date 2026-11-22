@@ -174,7 +174,7 @@
     <span class="brand-tag">Live RF + Virtual Sandbox</span>
   </div>
   <div class="top-right">
-    <button type="button" class="btn-chip active" id="btnToggleCoach" onclick="toggleCoachCard()">💡 Interactive Tour (10)</button>
+    <button type="button" class="btn-chip active" id="btnToggleCoach" onclick="toggleCoachCard()">💡 Interactive Tour (12)</button>
     <button type="button" class="btn-chip" id="btnVoiceGuide" onclick="toggleVoiceNarrator()" title="Speak interactive tips aloud using browser voice synthesis">🔇 Voice Guide: OFF</button>
     <button type="button" class="btn-chip" id="btnThemeSwitch" onclick="togglePageTheme()">🌙 Dark</button>
   </div>
@@ -251,7 +251,8 @@
   </aside>
 </div>
 
-<script src="/miboxer_catalog.js"></script>
+<script src="http://192.168.7.121/miboxer_catalog.js" onerror="this.onerror=null;this.src='/miboxer_catalog.js'"></script>
+<script src="http://192.168.7.121/remote-studio.js" onerror="this.onerror=null;this.src='/remote_studio.js'"></script>
 <script src="/three.min.js"></script>
 <script>
 function createCutawaySmartHome3D(opts) {
@@ -888,6 +889,28 @@ const SHOWCASE_STEPS = [
     showcaseSegs: true,
     demoCmd: () => triggerDemoVirtual(3, 'hue_seg_1', 1),
     match: (ev) => /^(hue|cct|sat|bri)_seg_\d+$/.test(String(ev.action || ''))
+  },
+  {
+    title: '1-Zone Custom Panel: Multimodal Tap-to-Step & Hold-to-Toggle',
+    body: 'Even a single-zone B0 glass panel can run an entire room! Segmenting its Color Ring & buttons creates dedicated device icons where a Short Tap cycles steps (e.g. Fan Speed 1→6 or Blinds 25→100%) and a 0.6s Long Hold toggles power ON/OFF—while unused keys are cleanly masked.',
+    tryHtml: '👉 <b>Try it on [3D Suite B0]:</b> Tap <b>Fan</b> repeatedly on the docked custom stencil to step speeds <b>1→6</b>, Hold <b>0.6s</b> to toggle OFF/ON, or tap <b>Garage / Gate / Lawn</b>!',
+    voice: 'Tip 11 showcases single-button multimodal control on a custom one-zone B zero panel. Short tap the Fan icon on the segmented ring to step speeds one through six, or hold the same pad to toggle power off and on. Unused S plus and S minus pads are masked cleanly off the stencil.',
+    cam: [-1.2, 10.5, 9.5, -1.5, 1.2, -0.5],
+    preferModel: 'CUST_B0_3D_SUITE',
+    zone: 1,
+    demoCmd: () => triggerDemoVirtual(1, 'hue_seg_1', 1),
+    match: (ev) => String(ev.hex || '').toUpperCase() === '0X3DB0' || /^(hue|sat)_seg_\d+$/.test(String(ev.action || ''))
+  },
+  {
+    title: 'Reusable Custom Remote Models & Standardized Room Stencils',
+    body: 'Factory MiBoxer models (61) remain safely Read-Only on the ESP32 Hub, while custom designs save as reusable Custom Remote types (like 3D Estate B8 & Matte B4-B) complete with standardized room icons and 1:1 printable vinyl stencils.',
+    tryHtml: '👉 <b>Try it on [3D Estate B8]:</b> Click any standardized <b>Room Pad (Lounge, Study, Bed AC, Garage, Lawn)</b> or click <b>🎨 Stencil Studio</b> on the dock to inspect & print the 1:1 overlay!',
+    voice: 'Tip 12: Factory remotes stay read-only, while your custom designs appear as first-class Custom Remote models across the Hub, Homebridge, and Home Assistant. Click Stencil Studio on the docked panel to customize icons or print a calibrated one-to-one overlay sheet.',
+    cam: [0, 14.5, 19.0, 0, 0.5, 1.5],
+    preferModel: 'CUST_B8_3D_ESTATE',
+    zone: 4,
+    demoCmd: () => triggerDemoVirtual(4, 'sat_seg_2', 1),
+    match: (ev) => String(ev.hex || '').toUpperCase() === '0X3DB8' || String(ev.hex || '').toUpperCase() === '0X3DB4'
   }
 ];
 
@@ -942,6 +965,10 @@ function renderCoachStep(flyCamera) {
   }
   window.tourShowcaseSegments = Boolean(s.showcaseSegs && coachOpen);
   if (remotes.length) {
+    if (flyCamera && s.preferModel) {
+      const pIdx = remotes.findIndex((r) => String(r.visual_model || r.model || '') === s.preferModel);
+      if (pIdx >= 0) selRem = pIdx;
+    }
     const cur = remotes[selRem] || remotes[0];
     if (flyCamera && s.zone !== undefined) zonesByDev[getDevId(cur)] = s.zone;
     renderDock();
@@ -1157,7 +1184,7 @@ function renderDockSegments(wrap, cur, devId, rtype, curZ) {
 function renderDock() {
   if (!remotes.length || !window.MiBoxerCatalog) return;
   const cur = remotes[selRem] || remotes[0], devId = getDevId(cur), curZ = zonesByDev[devId] ?? 1;
-  document.getElementById('rdTabs').innerHTML = remotes.map((r,i) => `<button class="rd-btn ${i===selRem?'active':''}" onclick="selRem=${i};renderDock()">${r.visual_model||r.model||'REM'}</button>`).join('');
+  document.getElementById('rdTabs').innerHTML = remotes.map((r,i) => `<button class="rd-btn ${i===selRem?'active':''}" onclick="selRem=${i};renderDock()">${String(r.visual_model||r.model||'REM').startsWith('CUST_') ? ('★ ' + String(r.name||r.visual_model).replace('[Showcase] ','').slice(0,14)) : (r.visual_model||r.model||'REM')}</button>`).join('');
   const maxZ = Math.min(Math.max(Number(cur.num_zones || 8), 1), 8);
   document.getElementById('rdZones').innerHTML = [0, ...Array.from({length:maxZ}, (_,k)=>k+1)].map((z) => `<button class="rd-btn ${curZ===z?'active':''}" onclick="zonesByDev[${devId}]=${z};renderDock()">${z===0?'All':'Z'+z}</button>`).join('');
   document.getElementById('rdTargetHint').textContent = '→ ' + (ZONE_TARGET_NAMES[curZ] || `Zone ${curZ}`);
@@ -1165,7 +1192,34 @@ function renderDock() {
   const vm = cur.visual_model || cur.model || '', rtype = cur.remote_type || 'fut089';
   const mod = MiBoxerCatalog.MODELS.find((m)=>m.id===vm) || MiBoxerCatalog.MODELS.find((m)=>m.proto===rtype) || MiBoxerCatalog.MODELS[0];
   const wrap = document.getElementById('rdSvg');
-  wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid:'full3d' });
+  if (!window.dockStepState) window.dockStepState = {};
+
+  // Add compact "🎨 Stencil Studio" launcher pill in Target Hint row for flat capacitive panels
+  const hintEl = document.getElementById('rdTargetHint');
+  if (hintEl && MiBoxerCatalog.isCapacitiveFlatPanel && MiBoxerCatalog.isCapacitiveFlatPanel(mod)) {
+    hintEl.innerHTML = `<span>→ ${ZONE_TARGET_NAMES[curZ] || ('Zone ' + curZ)}</span> <button type="button" class="rd-btn" style="margin-left:6px;padding:1px 6px;font-size:10px" onclick="openDockStencilStudio()">🎨 Stencil</button>`;
+  }
+
+  if (window.MiLightRemoteStudio && (cur.facia || mod.isCustom) && !window.tourShowcaseSegments) {
+    window._dockStageCtrl = MiLightRemoteStudio.mountInteractiveStage(wrap, {
+      model: mod, size: 'thumb', uid: 'full3d', maxHeight: '250px',
+      facia: cur.facia || mod.facia,
+      touchZones: cur.touch_zones || mod.touchZones,
+      activeZone: curZ,
+      stepState: window.dockStepState,
+      onZoneChange: (zNext) => { zonesByDev[devId] = zNext; renderDock(); },
+      onAction: async (act, val, zNext, customMsg) => {
+        const isHoldToggle = Boolean(customMsg && customMsg.includes('Hold Toggle'));
+        const apiAct = isHoldToggle ? `${act}_hold` : (act === 'kelvin' ? 'color_temp' : act);
+        await fetch('/api/virtual_send', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: devId, remote_type: rtype, group_id: zNext, action: apiAct, value: val })
+        });
+      }
+    });
+    return;
+  }
+  wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid:'full3d', facia: cur.facia || mod.facia, touchZones: cur.touch_zones || mod.touchZones, activeZone: curZ });
   wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el) => el.classList.add('zone-active'));
   renderDockSegments(wrap, cur, devId, rtype, curZ);
   wrap.querySelectorAll('.mbx-hit').forEach((el) => {
@@ -1212,13 +1266,41 @@ function flashDock(devId, act, zone, src, val) {
   bd.textContent = isRf ? '🟢 PHYSICAL RF' : '🟠 UI CLICK';
 }
 
+function openDockStencilStudio() {
+  const cur = remotes[selRem] || remotes[0];
+  if (!cur || !window.MiLightRemoteStudio || !window.MiBoxerCatalog) return;
+  const vm = cur.visual_model || cur.model || 'B8';
+  const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
+  MiLightRemoteStudio.openFaciaDesigner({
+    hubUrl: 'http://192.168.7.121',
+    model: mod,
+    hexId: cur.hex_id || cur.hex,
+    remoteName: cur.name,
+    facia: cur.facia || mod.facia,
+    touchZones: cur.touch_zones || mod.touchZones,
+    onTestAction: (act, val, z) => triggerDemoVirtual(z, act, val),
+    onSaveCustomModel: async () => { location.reload(); },
+    onDeleteCustomModel: async () => { location.reload(); }
+  });
+}
+
 async function boot() {
-  const [st, rList] = await Promise.all([
+  if (window.MiBoxerCatalog && MiBoxerCatalog.syncCustomModelsFromHub) {
+    await MiBoxerCatalog.syncCustomModelsFromHub('http://192.168.7.121');
+  }
+  const [st, rList, hubList] = await Promise.all([
     fetch('/api/state').then((r) => r.json()).catch(() => ({})),
-    fetch('/api/remotes').then((r) => r.json()).catch(() => [])
+    fetch('/api/remotes').then((r) => r.json()).catch(() => []),
+    fetch('http://192.168.7.121/api/remotes').then((r) => r.json()).catch(() => [])
   ]);
   (st.devices || []).forEach((d) => stateMap.set(d.id, d));
-  remotes = Array.isArray(rList) ? rList : (st.remotes || []);
+  const baseRemotes = Array.isArray(rList) && rList.length ? rList : (st.remotes || []);
+  const hubById = new Map((Array.isArray(hubList) ? hubList : []).map((hr) => [Number(hr.device_id), hr]));
+  // Merge Hub facia/touch_zones + include any Hub showcase remotes not yet cached
+  remotes = baseRemotes.map((r) => Object.assign({}, r, hubById.get(getDevId(r)) || {}));
+  for (const hr of hubById.values()) {
+    if (!remotes.some((r) => getDevId(r) === Number(hr.device_id))) remotes.push(hr);
+  }
   const b8 = remotes.findIndex((r) => String(r.visual_model || r.model || '').toUpperCase().includes('B8'));
   if (b8 >= 0) selRem = b8;
   renderSidebar();
@@ -1233,8 +1315,15 @@ async function boot() {
     (j.updated || []).forEach((d) => { stateMap.set(d.id, d); eng.pulseBadge(d.id, j.event?.action?.toUpperCase()); });
     renderSidebar();
     if (j.event) {
-      const ev = j.event, devId = ev.device_id || parseInt(String(ev.hex || '0').replace(/^0x/i,''), 16) || 0;
-      flashDock(devId, ev.action, ev.zone, ev.source || 'rf', ev.value);
+      const ev = j.event;
+      let devId = ev.device_id || parseInt(String(ev.hex || '0').replace(/^0x/i,''), 16) || 0;
+      let flashAct = ev.action;
+      const curDockRem = remotes[selRem];
+      if (curDockRem && Array.isArray(ev.linkedTargets)) {
+        const lm = ev.linkedTargets.find((t) => Number(t.device_id) === getDevId(curDockRem));
+        if (lm) { devId = lm.device_id; flashAct = lm.action || ev.action; }
+      }
+      flashDock(devId, flashAct, ev.zone, ev.source || 'rf', ev.value);
       checkCoachProgress(ev);
       const tag = ev.source === 'ui' ? '🟠 [Virtual Click]' : '🟢 [Physical RF]';
       const updNames = (j.updated || []).map((u) => u.name.replace('[Virtual] ','')).join(', ') || 'No Sandbox Target';
