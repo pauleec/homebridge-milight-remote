@@ -136,11 +136,11 @@
       .mlrs-pill-group .mlrs-btn.active-tab { background: var(--mlrs-primary); color: var(--mlrs-primary-fg); }
 
       .mlrs-modal.mlrs-fullscreen { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; border-radius: 0 !important; border: none !important; }
-      .mlrs-peel-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; user-select: none; }
+      .mlrs-peel-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; flex: 1; min-height: 0; user-select: none; }
       .mlrs-peel-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; padding: 6px 10px; border-radius: 9px; border: 1px solid rgba(2,132,199,0.32); background: rgba(2,132,199,0.07); font-size: 11.5px; width: 100%; box-sizing: border-box; }
       .mlrs-peel-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid #0284c7; background: #0284c7; color: #fff; font-weight: 700; font-size: 11.5px; cursor: pointer; }
       .mlrs-peel-btn.peeled { background: #0f172a; border-color: #334155; }
-      .mlrs-peel-stack { position: relative; display: inline-grid; place-items: center; padding: 6px; }
+      .mlrs-peel-stack { position: relative; display: inline-grid; place-items: center; padding: 6px; flex: 1; min-height: 0; }
       .mlrs-peel-under, .mlrs-peel-over { grid-area: 1 / 1; display: flex; align-items: center; justify-content: center; }
       .mlrs-peel-over { position: relative; z-index: 2; transition: clip-path 0.24s cubic-bezier(.22,.9,.3,1), filter 0.2s ease; filter: drop-shadow(-3px 5px 8px rgba(15,23,42,0.28)); }
       .mlrs-peel-stack.scrubbing .mlrs-peel-over, .mlrs-peel-stack.scrubbing .mlrs-peel-flap { transition: none !important; }
@@ -202,9 +202,20 @@
 
     const svgEl = stageEl.querySelector('svg');
     if (!svgEl) return null;
-    svgEl.style.maxHeight = opts.maxHeight || 'min(62vh, 540px)';
-    svgEl.style.height = '100%';
+    const vb = (svgEl.getAttribute('viewBox') || '0 0 220 310').trim().split(/[\s,]+/).map(Number);
+    const vbRatio = (vb[2] > 0 && vb[3] > 0) ? (vb[2] / vb[3]) : 0.71;
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    const targetH = opts.maxHeight || 'clamp(370px, 58vh, 640px)';
+    svgEl.style.height = targetH;
+    svgEl.style.maxHeight = '100%';
     svgEl.style.width = 'auto';
+    svgEl.style.maxWidth = '100%';
+    svgEl.style.aspectRatio = `${vb[2] || 220} / ${vb[3] || 310}`;
+    if (vbRatio > 0.88) {
+      // Square / wide 86x86 or 142x86 wall panels: scale generously without towering over handhelds
+      svgEl.style.height = opts.squareHeight || 'clamp(330px, 48vh, 520px)';
+    }
     svgEl.style.display = 'block';
     svgEl.style.userSelect = 'none';
 
@@ -867,6 +878,33 @@
       backdrop.querySelector('#mlrsModeEdit').onclick = () => { mode = 'edit'; renderModal(); };
       backdrop.querySelector('#mlrsModeTest').onclick = () => { mode = 'test'; lastTestReadout = 'Tap any multi-function device button to cycle steps (1→6), or Hold 0.6s to toggle ON/OFF!'; renderModal(); };
       backdrop.querySelector('#mlrsCloseBtn').onclick = () => backdrop.remove();
+      const fb = backdrop.querySelector('#mlrsFullBtn');
+      if (fb) {
+        fb.onclick = () => {
+          const m = backdrop.querySelector('.mlrs-modal');
+          if (m) {
+            m.classList.toggle('mlrs-fullscreen');
+            fb.textContent = m.classList.contains('mlrs-fullscreen') ? '❐ Windowed' : '⤢ Fullscreen';
+          }
+        };
+      }
+      const gb = backdrop.querySelector('#mlrsOpenGestBtn');
+      if (gb && typeof opts.onOpenGestures === 'function') {
+        gb.onclick = () => { backdrop.remove(); opts.onOpenGestures(); };
+      }
+      const tourBox = backdrop.querySelector('#mlrsStudioTourMount');
+      if (tourBox) {
+        mountShowcaseTour(tourBox, {
+          tourId: 'stencil_editor',
+          steps: [
+            { title: 'Full-Viewport Canvas & Starter Templates', body: 'Click Fullscreen above for maximum design space, or load a Starter Template to auto-populate room icons & segmented wheel buttons.', actionLabel: 'Toggle Fullscreen', onAction: () => backdrop.querySelector('#mlrsFullBtn')?.click() },
+            { title: 'Split Rings & Sliders Into Discrete Buttons', body: 'Use Left Panel Section 1 to turn continuous Color Rings or Touch Bars into 2 to 8 labeled macro buttons.', actionLabel: 'Select Ring Slot #1', onAction: () => { selectedPadKey = 'hue_seg_1'; mode = 'edit'; renderModal(); } },
+            { title: 'Architectural Themes & Blank Pad Masking', body: 'Switch between Pure White, Warm Travertine, or Matte Black vinyl palettes and set unused buttons to Blank Masked.', actionLabel: 'Preview Warm Stone', onAction: () => { draft.theme = 'warm_stone'; draft.colors = null; renderModal(); } },
+            { title: 'Single-Button Step-Cycling + Hold Toggle', body: 'Enable Multi-Function on any pad so short taps cycle speeds/positions (1 to 6) while a long hold toggles OFF — test it live in Mode 2!', actionLabel: 'Switch to Interactive Test', onAction: () => { mode = 'test'; renderModal(); } },
+            { title: 'Calibrated 1:1 Millimeter Print & SVG Export', body: 'Print Sheet adds a 10 mm verification square, and Download 1:1 SVG uses a real HTTP attachment stream compatible with download managers.', actionLabel: 'Download 1:1 SVG', onAction: () => backdrop.querySelector('#mlrsDlSvgBtn')?.click() }
+          ]
+        });
+      }
       backdrop.querySelector('#mlrsCancelBtn').onclick = () => backdrop.remove();
 
       // Preset Showcase Loader buttons
@@ -953,10 +991,11 @@
 
       // Print & Export
       backdrop.querySelector('#mlrsPrintBtn').onclick = () => openPrintSheetWindow(remoteName, hexId, model, draft, tz, activeZone);
-      backdrop.querySelector('#mlrsDlSvgBtn').onclick = () => {
-        const blob = new Blob([buildOneToOnePrintSvg(model, draft, tz, activeZone)], { type: 'image/svg+xml' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `${model.id.toLowerCase()}_${hexId.toLowerCase()}_stencil_1to1.svg`; a.click();
+      backdrop.querySelector('#mlrsDlSvgBtn').onclick = (ev) => {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        const svgStr = buildOneToOnePrintSvg(model, draft, tz, activeZone);
+        const fName = `${model.id.toLowerCase()}_${hexId.toLowerCase()}_stencil_1to1.svg`;
+        downloadTextFile(fName, svgStr, 'image/svg+xml', { hubBase });
       };
 
       const nameInp = backdrop.querySelector('#mlrsCustomModelName');
@@ -1192,7 +1231,7 @@
       : (Cat.MODELS.find(m => m.id === baseId && !m.isCustom) || Cat.MODELS.find(m => (m.base || m.id) === String(baseId).replace(/-B$/, '') && !m.isCustom) || Cat.MODELS[0]);
 
     let peelPct = Math.max(0, Math.min(100, Number(opts.initialPeelPct || 0)));
-    const maxH = opts.maxHeight || 'min(60vh, 520px)';
+    const maxH = opts.maxHeight || 'clamp(370px, 56vh, 620px)';
     const linkedTitle = opts.linkedBadgeText || `Custom Stencil ⇄ Bare ${physicalModel.id}`;
 
     containerEl.innerHTML = `
@@ -1317,6 +1356,32 @@
   }
 
 
+  function submitPostDownloadForm(actionUrl, safeName, text) {
+    let ifr = document.getElementById('mlrs_hidden_dl_iframe');
+    if (!ifr) {
+      ifr = document.createElement('iframe');
+      ifr.id = 'mlrs_hidden_dl_iframe';
+      ifr.name = 'mlrs_hidden_dl_iframe';
+      ifr.style.display = 'none';
+      document.body.appendChild(ifr);
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = actionUrl;
+    form.target = 'mlrs_hidden_dl_iframe';
+    form.enctype = 'application/x-www-form-urlencoded';
+    form.style.display = 'none';
+    const fnInput = document.createElement('input');
+    fnInput.type = 'hidden'; fnInput.name = 'filename'; fnInput.value = safeName;
+    const ctInput = document.createElement('input');
+    ctInput.type = 'hidden'; ctInput.name = 'content'; ctInput.value = text;
+    form.appendChild(fnInput);
+    form.appendChild(ctInput);
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => form.remove(), 5000);
+  }
+
   async function downloadTextFile(filename, content, mimeType, opts) {
     const safeName = String(filename || 'stencil_1to1.svg').replace(/[^a-zA-Z0-9._-]/g, '_');
     const mime = mimeType || 'image/svg+xml';
@@ -1348,6 +1413,15 @@
           return true;
         }
       } catch (_) {}
+    }
+
+    // 1b. Direct HTTP POST attachment bounce (ESP32 Hub / Smart-Twin / Homebridge) — 100% immune to Chrono blob: hangs!
+    const postEndpoint = (opts && opts.downloadEndpoint)
+      || (opts && opts.hubBase ? `${String(opts.hubBase).replace(/\/+$/, '')}/api/remotes/download` : '')
+      || ((typeof location !== 'undefined' && (location.pathname === '/' || location.port === '8588')) ? '/api/remotes/download' : '');
+    if (postEndpoint) {
+      submitPostDownloadForm(postEndpoint, safeName, text);
+      return true;
     }
 
     // 2. Native OS Save File Picker (Chromium secure contexts — never hijacked by download extensions)

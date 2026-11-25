@@ -87,7 +87,7 @@
   body { margin: 0; padding: 8px 10px; background: #f1f5f9; box-sizing: border-box; }
   html, body { height: auto !important; min-height: 0 !important; overflow-x: hidden; }
   .hb-app-frame { background: #fff; border: 1px solid var(--border-strong); border-radius: 14px; padding: 12px 14px; box-shadow: 0 4px 18px rgba(15,23,42,0.06); display: flex; flex-direction: column; height: var(--hb-fixed-h, 690px); max-height: var(--hb-fixed-h, 690px); overflow: hidden; box-sizing: border-box; }
-  .hb-cockpit { display: grid; grid-template-columns: 255px minmax(380px, 470px) 1fr; gap: 14px; align-items: stretch; flex: 1; min-height: 0; overflow: hidden; }
+  .hb-cockpit { display: grid; grid-template-columns: 235px minmax(460px, 1.35fr) minmax(350px, 480px); gap: 14px; align-items: stretch; flex: 1; min-height: 0; overflow: hidden; }
   #tab_remotes, #tab_sandbox, #tab_real, #tab_3d, #tab_settings { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
   @media (max-width: 1060px) { .hb-cockpit { grid-template-columns: 1fr; } }
   .hb-pane { background: var(--stage); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; box-sizing: border-box; }
@@ -97,7 +97,7 @@
   .hb-subtabs { display: flex; gap: 5px; background: #fff; padding: 4px; border-radius: 9px; border: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; }
   .hb-subtab { flex: 1; min-width: 110px; padding: 6px 9px; border-radius: 7px; border: none; background: transparent; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; }
   .hb-subtab.active { background: var(--hb-orange); color: #fff; }
-  .hb-subbody { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px; flex: 1; }
+  .hb-subbody { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px; flex: 0 1 auto; }
 
 </style>
 </head>
@@ -660,7 +660,7 @@ function hbDownloadOneToOneSvg() {
   const vm = r.visual_model || r.model || 'B8', hx = getHex(getDevId(r));
   const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
   const svg = MiLightRemoteStudio.buildOneToOnePrintSvg(mod, r.facia, r.touch_zones, activeZoneByDev[getDevId(r)] ?? 1);
-  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_1to1.svg`, svg, 'image/svg+xml');
+  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_1to1.svg`, svg, 'image/svg+xml', { downloadEndpoint: `http://${hostInfo.lanIp || location.hostname}:${hostInfo.twinPort || 8588}/api/remotes/download` });
 }
 function hbDownloadPodJson() {
   const r = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
@@ -675,7 +675,7 @@ function hbDownloadPodJson() {
     material: document.getElementById('hbPodMatSel')?.value || 'peelable_matte_vinyl',
     svg_1to1: MiLightRemoteStudio.buildOneToOnePrintSvg(mod, r.facia, r.touch_zones, activeZoneByDev[getDevId(r)] ?? 1)
   };
-  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_pod_order.json`, JSON.stringify(payload, null, 2), 'application/json');
+  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_pod_order.json`, JSON.stringify(payload, null, 2), 'application/json', { downloadEndpoint: `http://${hostInfo.lanIp || location.hostname}:${hostInfo.twinPort || 8588}/api/remotes/download` });
 }
 let hbPeelCtrl = null;
 function renderHbLinkedStudio() {
@@ -748,12 +748,13 @@ function renderHbLinkedStudio() {
     const pMod = MiBoxerCatalog.MODELS.find((m) => m.id === pVm && !m.isCustom) || MiBoxerCatalog.MODELS[0];
 
     stage.style.display = 'flex';
-    stage.innerHTML = `<div id="hbPeelMount" style="width:100%;max-width:520px;height:100%;display:flex;align-items:center;justify-content:center;margin:0 auto"></div>`;
+    stage.innerHTML = `<div id="hbPeelMount" style="width:100%;width:100%;max-width:680px;height:100%;display:flex;align-items:center;justify-content:center;margin:0 auto"></div>`;
     hbPeelCtrl = MiLightRemoteStudio.mountPeelableStage(document.getElementById('hbPeelMount'), {
       overlayModel: cMod,
       physicalModel: pMod,
       uid: `hbp_${cId}`,
-      maxHeight: '465px',
+      maxHeight: 'clamp(360px, calc(var(--hb-fixed-h, 700px) - 255px), 580px)',
+      squareHeight: 'clamp(330px, calc(var(--hb-fixed-h, 700px) - 275px), 500px)',
       facia: custObj.facia,
       touchZones: custObj.touch_zones,
       calibration: custObj.calibration,
