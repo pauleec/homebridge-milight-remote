@@ -20,22 +20,22 @@ class MiLightRemoteUiServer extends HomebridgePluginUiServer {
     super();
     this.onRequest('/host-info', async () => {
       const cfg = this._readPlatformConfig();
-      return { lanIp: detectLanIp(), twinPort: Number(cfg.twinPort) || 8588, hubUrl: String(cfg.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '') };
+      return { lanIp: detectLanIp(), twinPort: Number(cfg.twinPort) || 8588, hubUrl: String(cfg.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '') };
     });
     this.onRequest('/remote-upsert', async (payload) => {
       const cfg = this._readPlatformConfig();
       const p = Number(cfg.twinPort) || 8588;
-      const hubUrl = String(cfg.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+      const hubUrl = String(cfg.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
       const res = await this._httpPostJson(`${hubUrl}/api/remotes`, payload || {});
       try { await this._httpPostJson(`http://127.0.0.1:${p}/api/remotes/upsert_cache`, payload || {}); } catch (_) {}
       return res;
     });
     this.onRequest('/remotes', async () => {
-      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
       try { const d = await this._httpGetJson(`${hubUrl}/api/remotes`); return Array.isArray(d) ? d : []; } catch (e) { return { error: e.message, remotes: [] }; }
     });
     this.onRequest('/last-event', async () => {
-      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
       try { return await this._httpGetJson(`${hubUrl}/api/remotes/last_seen`); } catch (e) { return { error: e.message }; }
     });
     this.onRequest('/twin-state', async () => {
@@ -69,9 +69,22 @@ class MiLightRemoteUiServer extends HomebridgePluginUiServer {
     this.onRequest('/virtual-send', async (payload) => {
       const cfg = this._readPlatformConfig();
       const p = Number(cfg.twinPort) || 8588;
-      const hubUrl = String(cfg.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+      const hubUrl = String(cfg.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
       try { return await this._httpPostJson(`http://127.0.0.1:${p}/api/virtual_send`, payload || {}); }
       catch (_) { return await this._httpPostJson(`${hubUrl}/api/remotes/virtual_send`, payload || {}); }
+    });
+    this.onRequest('/studio-meta', async (payload) => {
+      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
+      try {
+        if (payload && (payload.hex_id || payload.device_id)) {
+          return await this._httpPostJson(`${hubUrl}/api/remotes/studio_meta`, payload);
+        }
+        return await this._httpGetJson(`${hubUrl}/api/remotes/studio_meta`);
+      } catch (e) { return { error: e.message }; }
+    });
+    this.onRequest('/custom-models', async () => {
+      const hubUrl = String(this._readPlatformConfig().hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
+      try { return await this._httpGetJson(`${hubUrl}/api/remotes/custom_models`); } catch (e) { return []; }
     });
     this.ready();
   }

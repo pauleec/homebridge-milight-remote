@@ -1078,14 +1078,47 @@
     return (m.cat === 'panel' || m.isCustom) && CAPACITIVE_LAYOUTS.has(m.layout);
   }
 
+
+  function resolveBaseHardwareId(modelOrId) {
+    if (!modelOrId) return '';
+    const m = typeof modelOrId === 'string'
+      ? (MODELS.find(x => x.id === modelOrId) || { id: modelOrId })
+      : modelOrId;
+    const bId = m.baseModel || m.base_model || m.base || m.id || '';
+    const baseObj = MODELS.find(x => x.id === bId && !x.isCustom) || MODELS.find(x => x.id === String(bId).replace(/-B$/, '') && !x.isCustom);
+    return baseObj ? (baseObj.base || baseObj.id) : String(bId).replace(/-B$/, '');
+  }
+
+  function areModelsPhysicallyCompatible(customModelOrRem, physModelOrRem) {
+    if (!customModelOrRem || !physModelOrRem) return false;
+    const getMod = (item) => {
+      if (typeof item === 'string') return MODELS.find(x => x.id === item) || { id: item };
+      const vm = item.visual_model || item.model || item.id || '';
+      const found = MODELS.find(x => x.id === vm);
+      if (found) return found;
+      if (item.base_model || item.baseModel) {
+        const bm = MODELS.find(x => x.id === (item.base_model || item.baseModel));
+        if (bm) return Object.assign({}, bm, { id: vm, baseModel: bm.id, isCustom: true });
+      }
+      return item;
+    };
+    const cm = getMod(customModelOrRem);
+    const pm = getMod(physModelOrRem);
+    if (pm.isCustom || String(pm.id || '').startsWith('CUST_')) return false;
+    const cBase = resolveBaseHardwareId(cm);
+    const pBase = resolveBaseHardwareId(pm);
+    if (!cBase || !pBase) return false;
+    return cBase.toUpperCase() === pBase.toUpperCase();
+  }
+
   function getPhysicalDims(modelOrId) {
     const m = typeof modelOrId === 'string' ? (MODELS.find(x => x.id === modelOrId) || { id: modelOrId }) : (modelOrId || {});
     const layout = m.layout || '';
-    if (layout === 'b8') return { width_mm: 106, height_mm: 146, glass_w_mm: 100, glass_h_mm: 140, corner_mm: 4.5, led_x_pct: 50, led_y_pct: 7.5, mount: 'EU/AU Portrait Glass Wall Panel' };
-    if (layout === 'u_panel') return { width_mm: 70, height_mm: 114, glass_w_mm: 65, glass_h_mm: 109, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.5, mount: 'US Single-Gang Glass Wall Panel' };
-    if (layout === 'm4') return { width_mm: 142, height_mm: 86, glass_w_mm: 136, glass_h_mm: 80, corner_mm: 4.0, led_x_pct: 8.5, led_y_pct: 11, mount: 'Italian 503/504 Landscape Glass Panel' };
-    if (layout === 'b_strip' || layout === 'b0' || layout === 'b5') return { width_mm: 86, height_mm: 86, glass_w_mm: 81, glass_h_mm: 81, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.0, mount: '86x86mm Square Glass Wall Panel' };
-    return { width_mm: 86, height_mm: 86, glass_w_mm: 80, glass_h_mm: 80, corner_mm: 4.0, mount: 'Standard Panel' };
+    if (layout === 'b8') return { width_mm: 106, height_mm: 146, glass_w_mm: 100, glass_h_mm: 140, corner_mm: 4.5, led_x_pct: 50, led_y_pct: 7.5, mount: 'EU/AU Portrait Glass Wall Panel', form_factor: 'EU/AU Portrait Glass Wall Panel' };
+    if (layout === 'u_panel') return { width_mm: 70, height_mm: 114, glass_w_mm: 65, glass_h_mm: 109, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.5, mount: 'US Single-Gang Glass Wall Panel', form_factor: 'US Single-Gang Glass Wall Panel' };
+    if (layout === 'm4') return { width_mm: 142, height_mm: 86, glass_w_mm: 136, glass_h_mm: 80, corner_mm: 4.0, led_x_pct: 8.5, led_y_pct: 11, mount: 'Italian 503/504 Landscape Glass Panel', form_factor: 'Italian 503/504 Landscape Glass Panel' };
+    if (layout === 'b_strip' || layout === 'b0' || layout === 'b5') return { width_mm: 86, height_mm: 86, glass_w_mm: 81, glass_h_mm: 81, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.0, mount: '86x86mm Square Glass Wall Panel', form_factor: '86x86mm Square Glass Wall Panel' };
+    return { width_mm: 86, height_mm: 86, glass_w_mm: 80, glass_h_mm: 80, corner_mm: 4.0, mount: 'Standard Panel', form_factor: 'Standard Remote / Wall Panel' };
   }
 
   // Standardized 24x24 Architectural Vector Icons: Rooms (Group A) + Devices & Controls (Group B)
@@ -1856,6 +1889,8 @@
     resolveBaseModel,
     registerCustomModels,
     syncCustomModelsFromHub,
+    resolveBaseHardwareId,
+    areModelsPhysicallyCompatible,
     getPhysicalDims,
     getPanelBlueprint,
     getSamplePresetsForModel,

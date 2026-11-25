@@ -20,7 +20,7 @@ class MiLightRemotePlatform {
 
     this.mqttHost = this.config.mqttHost || '127.0.0.1';
     this.mqttPort = Number(this.config.mqttPort) || 1883;
-    this.hubUrl = String(this.config.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+    this.hubUrl = String(this.config.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
     this.defaultMode = this.config.exposureMode || 'none';
     this.enableTwin = (this.config.enableSmartHomeTwin !== false);
     this.twinPort = Number(this.config.twinPort) || 8588;

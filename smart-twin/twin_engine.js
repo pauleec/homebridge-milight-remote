@@ -142,7 +142,7 @@ class SmartHomeTwinEngine extends EventEmitter {
     this.mqttHost = opts.mqttHost || '127.0.0.1';
     this.mqttPort = Number(opts.mqttPort) || 1883;
     this.httpPort = Number(opts.httpPort) || 8588;
-    this.hubUrl = String(opts.hubUrl || 'http://192.168.7.121').replace(/\/+$/, '');
+    this.hubUrl = String(opts.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
     this.haDiscovery = (opts.haDiscovery !== false);
     this.haPrefix = opts.haPrefix || 'homeassistant';
     this.twinBase = opts.twinBase || 'milight/twin';

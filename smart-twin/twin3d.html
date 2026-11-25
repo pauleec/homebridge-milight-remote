@@ -251,8 +251,8 @@
   </aside>
 </div>
 
-<script src="http://192.168.7.121/miboxer_catalog.js" onerror="this.onerror=null;this.src='/miboxer_catalog.js'"></script>
-<script src="http://192.168.7.121/remote-studio.js" onerror="this.onerror=null;this.src='/remote_studio.js'"></script>
+<script src="/miboxer_catalog.js"></script>
+<script src="/remote_studio.js"></script>
 <script src="/three.min.js"></script>
 <script>
 function createCutawaySmartHome3D(opts) {
@@ -753,7 +753,7 @@ function takeOverSingleton() {
 function getHbReturnUrl() {
   const q = new URLSearchParams(location.search).get('hb');
   if (q) return q + '/#!/plugins';
-  return `http://${location.hostname || '192.168.6.196'}:8581/#!/plugins`;
+  return `http://${location.hostname || 'localhost'}:8581/#!/plugins`;
 }
 
 function returnToHomebridgeSettings() {
@@ -1272,7 +1272,7 @@ function openDockStencilStudio() {
   const vm = cur.visual_model || cur.model || 'B8';
   const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
   MiLightRemoteStudio.openFaciaDesigner({
-    hubUrl: 'http://192.168.7.121',
+    hubUrl: (window.__TWIN_HUB_URL || 'http://milight-hub.local'),
     model: mod,
     hexId: cur.hex_id || cur.hex,
     remoteName: cur.name,
@@ -1286,12 +1286,12 @@ function openDockStencilStudio() {
 
 async function boot() {
   if (window.MiBoxerCatalog && MiBoxerCatalog.syncCustomModelsFromHub) {
-    await MiBoxerCatalog.syncCustomModelsFromHub('http://192.168.7.121');
+    await MiBoxerCatalog.syncCustomModelsFromHub(window.__TWIN_HUB_URL || 'http://milight-hub.local');
   }
   const [st, rList, hubList] = await Promise.all([
     fetch('/api/state').then((r) => r.json()).catch(() => ({})),
-    fetch('/api/remotes').then((r) => r.json()).catch(() => []),
-    fetch('http://192.168.7.121/api/remotes').then((r) => r.json()).catch(() => [])
+    fetch('/api/remotes').catch(() => []),
+    fetch('/api/hub_info').then(r=>r.json()).then(j=>{if(j&&j.hubUrl)window.__TWIN_HUB_URL=j.hubUrl; return fetch((window.__TWIN_HUB_URL||'http://milight-hub.local')+'/api/remotes');}).then(r=>r.json()).catch(() => [])
   ]);
   (st.devices || []).forEach((d) => stateMap.set(d.id, d));
   const baseRemotes = Array.isArray(rList) && rList.length ? rList : (st.remotes || []);

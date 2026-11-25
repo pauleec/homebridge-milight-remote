@@ -25,7 +25,7 @@
       "hubUrl": {
         "title": "ESP32 Mi-Light Hub URL",
         "type": "string",
-        "default": "http://192.168.7.121"
+        "default": "http://milight-hub.local"
       },
       "exposureMode": {
         "title": "HomeKit Exposure Mode",

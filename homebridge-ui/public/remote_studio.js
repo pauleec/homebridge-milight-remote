@@ -106,12 +106,12 @@
       }
       .mlrs-modal {
         background: var(--mlrs-bg); color: var(--mlrs-fg); border: 1px solid var(--mlrs-border); border-radius: 12px;
-        width: min(1240px, 97vw); height: min(860px, 94vh); display: flex; flex-direction: column; overflow: hidden;
+        width: 96vw; max-width: 1840px; height: 94vh; display: flex; flex-direction: column; overflow: hidden;
         box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25);
       }
       .mlrs-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; background: var(--mlrs-bg); border-bottom: 1px solid var(--mlrs-border); }
       .mlrs-preset-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 20px; background: var(--mlrs-muted); border-bottom: 1px solid var(--mlrs-border); font-size: 12px; }
-      .mlrs-body { display: grid; grid-template-columns: 310px 1fr 350px; flex: 1; min-height: 0; overflow: hidden; }
+      .mlrs-body { display: grid; grid-template-columns: minmax(300px, 360px) 1fr minmax(320px, 400px); flex: 1; min-height: 0; overflow: hidden; }
       @media (max-width: 1040px) { .mlrs-body { grid-template-columns: 1fr; overflow-y: auto; } }
       .mlrs-col { padding: 14px 16px; overflow-y: auto; border-right: 1px solid var(--mlrs-border); background: var(--mlrs-bg); }
       .mlrs-col:last-child { border-right: none; border-left: 1px solid var(--mlrs-border); }
@@ -134,6 +134,41 @@
       .mlrs-pill-group { display: inline-flex; background: var(--mlrs-muted); padding: 3px; border-radius: 8px; border: 1px solid var(--mlrs-border); gap: 3px; }
       .mlrs-pill-group .mlrs-btn { border: none; padding: 5px 11px; font-size: 12px; border-radius: 6px; background: transparent; }
       .mlrs-pill-group .mlrs-btn.active-tab { background: var(--mlrs-primary); color: var(--mlrs-primary-fg); }
+
+      .mlrs-modal.mlrs-fullscreen { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; border-radius: 0 !important; border: none !important; }
+      .mlrs-peel-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; user-select: none; }
+      .mlrs-peel-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; padding: 6px 10px; border-radius: 9px; border: 1px solid rgba(2,132,199,0.32); background: rgba(2,132,199,0.07); font-size: 11.5px; width: 100%; box-sizing: border-box; }
+      .mlrs-peel-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid #0284c7; background: #0284c7; color: #fff; font-weight: 700; font-size: 11.5px; cursor: pointer; }
+      .mlrs-peel-btn.peeled { background: #0f172a; border-color: #334155; }
+      .mlrs-peel-stack { position: relative; display: inline-grid; place-items: center; padding: 6px; }
+      .mlrs-peel-under, .mlrs-peel-over { grid-area: 1 / 1; display: flex; align-items: center; justify-content: center; }
+      .mlrs-peel-over { position: relative; z-index: 2; transition: clip-path 0.24s cubic-bezier(.22,.9,.3,1), filter 0.2s ease; filter: drop-shadow(-3px 5px 8px rgba(15,23,42,0.28)); }
+      .mlrs-peel-stack.scrubbing .mlrs-peel-over, .mlrs-peel-stack.scrubbing .mlrs-peel-flap { transition: none !important; }
+      .mlrs-peel-corner-hit { position: absolute; top: 2px; right: 2px; width: 42px; height: 42px; z-index: 5; cursor: pointer; border-radius: 0 10px 0 28px; background: linear-gradient(225deg, rgba(148,163,184,0.38) 0%, rgba(255,255,255,0.88) 48%, rgba(15,23,42,0.16) 52%, transparent 56%); box-shadow: -2px 2px 5px rgba(15,23,42,0.18); title: "Click to peel back stencil"; }
+      .mlrs-peel-corner-hit:hover { transform: scale(1.08); }
+      .mlrs-peel-flap { position: absolute; inset: 6px; z-index: 4; pointer-events: none; background: linear-gradient(225deg, rgba(241,245,249,0.97) 0%, rgba(203,213,225,0.94) 55%, rgba(148,163,184,0.88) 100%); filter: drop-shadow(-6px 7px 10px rgba(15,23,42,0.34)); transition: clip-path 0.24s cubic-bezier(.22,.9,.3,1), opacity 0.2s ease; }
+
+
+      .mlrs-tour-bar {
+        display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 14px !important;
+        flex-wrap: wrap !important; padding: 10px 14px !important; border-radius: 11px !important;
+        border: 1px solid rgba(2,132,199,0.35) !important;
+        background: linear-gradient(135deg, rgba(2,132,199,0.09) 0%, rgba(15,23,42,0.03) 100%) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 6px rgba(15,23,42,0.05) !important;
+        margin: 0 0 10px 0 !important; font-size: 12.5px !important; line-height: 1.4 !important; box-sizing: border-box !important;
+      }
+      .mlrs-tour-left { display: flex !important; align-items: center !important; gap: 11px !important; flex: 1 !important; min-width: 240px !important; }
+      .mlrs-tour-icon { width: 34px !important; height: 34px !important; border-radius: 9px !important; background: #0284c7 !important; color: #fff !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 16px !important; flex-shrink: 0 !important; box-shadow: 0 2px 6px rgba(2,132,199,0.3) !important; }
+      .mlrs-tour-step-badge { display: inline-flex !important; align-items: center !important; padding: 2px 8px !important; border-radius: 999px !important; background: rgba(2,132,199,0.16) !important; color: #0284c7 !important; font-weight: 800 !important; font-size: 10.5px !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; margin-right: 7px !important; }
+      .mlrs-tour-dots { display: inline-flex !important; gap: 4px !important; align-items: center !important; margin-left: 8px !important; vertical-align: middle !important; }
+      .mlrs-tour-dot { width: 6px !important; height: 6px !important; border-radius: 999px !important; background: rgba(100,116,139,0.35) !important; }
+      .mlrs-tour-dot.on { width: 16px !important; background: #0284c7 !important; }
+      .mlrs-tour-nav { display: flex !important; align-items: center !important; gap: 6px !important; flex-wrap: wrap !important; }
+      button.mlrs-tour-btn { padding: 5px 11px !important; border-radius: 7px !important; border: 1px solid rgba(100,116,139,0.38) !important; background: var(--card-background-color, #ffffff) !important; color: var(--primary-text-color, #0f172a) !important; font-weight: 700 !important; font-size: 11.5px !important; cursor: pointer !important; line-height: 1.2 !important; }
+      button.mlrs-tour-btn:hover { border-color: #0284c7 !important; }
+      button.mlrs-tour-btn.demo { background: #0284c7 !important; border-color: #0284c7 !important; color: #ffffff !important; }
+      button.mlrs-tour-reopen { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 5px 12px !important; border-radius: 999px !important; border: 1px solid rgba(2,132,199,0.45) !important; background: rgba(2,132,199,0.10) !important; color: #0284c7 !important; font-weight: 700 !important; font-size: 11.5px !important; cursor: pointer !important; }
+
       .mlrs-box-sub { padding: 9px 10px; border-radius: 8px; background: var(--mlrs-muted); border: 1px solid var(--mlrs-border); margin-bottom: 10px; }
     `;
     document.head.appendChild(st);
@@ -143,7 +178,7 @@
   // 1. INTERACTIVE STAGE CONTROLLER (Finger Pucks, Segmented Pads & Step/Hold)
   // ============================================================================
   function mountInteractiveStage(stageEl, opts) {
-    injectStudioStyles();
+    injectStudioStyles(stageEl);
     const Cat = root.MiBoxerCatalog;
     if (!stageEl || !Cat) return null;
 
@@ -167,7 +202,8 @@
 
     const svgEl = stageEl.querySelector('svg');
     if (!svgEl) return null;
-    svgEl.style.maxHeight = opts.maxHeight || '410px';
+    svgEl.style.maxHeight = opts.maxHeight || 'min(62vh, 540px)';
+    svgEl.style.height = '100%';
     svgEl.style.width = 'auto';
     svgEl.style.display = 'block';
     svgEl.style.userSelect = 'none';
@@ -644,6 +680,8 @@
                 <button type="button" class="mlrs-btn ${mode === 'edit' ? 'active-tab' : ''}" id="mlrsModeEdit">1. Design Stencil</button>
                 <button type="button" class="mlrs-btn ${mode === 'test' ? 'active-tab' : ''}" id="mlrsModeTest">2. Interactive Test (Tap / Hold)</button>
               </div>
+              ${opts.onOpenGestures ? `<button type="button" class="mlrs-btn" id="mlrsOpenGestBtn" title="Configure Multi-Tap &amp; Segmented Touch Zones">🎛️ Gestures &amp; Segments</button>` : ''}
+              <button type="button" class="mlrs-btn" id="mlrsFullBtn" title="Toggle Full Browser Window">⤢ Fullscreen</button>
               <button type="button" class="mlrs-btn" id="mlrsCloseBtn">✕ Close</button>
             </div>
           </div>
@@ -663,6 +701,7 @@
             </div>
           </div>
 
+          <div id="mlrsStudioTourMount" style="padding:8px 20px 0;background:var(--mlrs-bg)"></div>
           <div class="mlrs-body">
             <!-- LEFT: Touch Bar/Ring Segmentation + Surface Theme -->
             <div class="mlrs-col">
@@ -808,7 +847,7 @@
       const stageBox = backdrop.querySelector('#mlrsCanvasStage');
       const refreshStageOnly = () => {
         mountInteractiveStage(stageBox, {
-          model, uid: 'facia_editor_svg', maxHeight: '425px',
+          model, uid: 'facia_editor_svg', maxHeight: 'min(68vh, 600px)',
           facia: draft, touchZones: tz, calibration: cal, activeZone,
           editMode: mode === 'edit', selectedPadKey: mode === 'edit' ? selectedPadKey : null,
           stepState,
@@ -1074,9 +1113,350 @@
     return { action, value: numVal, label: '', converted: false };
   }
 
+
+  function resolveCustomToPhysicalAction(action, value, zone, touchZones, cal) {
+    const act = String(action || '');
+    const m = act.match(/^(hue|sat|cct|bri)_seg_(\d+)$/);
+    if (!m) return { action: act, value: value, visDeg: undefined, pct: undefined, converted: false };
+    const kind = m[1];
+    const segNum = Math.max(1, Number(m[2] || value || 1));
+    const tz = normalizeTouchZones(touchZones);
+    if (kind === 'hue') {
+      const n = Math.min(12, Math.max(2, Number(tz.hue_ring.segments || 6)));
+      const span = 360 / n;
+      const off = Number(tz.hue_ring.offset_deg || 0);
+      const visDeg = (((off + (segNum - 0.5) * span) % 360) + 360) % 360;
+      const c = Object.assign(defaultCalibration(), cal || {});
+      const topRaw = typeof c.hueTopRaw === 'number' ? c.hueTopRaw : (c.wheel_top_raw ?? 0);
+      const dir = (c.hueDir === -1 || c.wheel_dir === -1) ? -1 : 1;
+      const rawHue = Math.round((((topRaw + dir * visDeg) % 360) + 360) % 360);
+      return { action: 'hue', value: rawHue, visDeg, converted: true };
+    }
+    const cfg = kind === 'sat' ? tz.sat_bar : (kind === 'cct' ? tz.cct_bar : tz.bri_bar);
+    const n = Math.min(6, Math.max(2, Number((cfg && cfg.segments) || 4)));
+    const pct = Math.max(0, Math.min(100, Math.round(((segNum - 0.5) / n) * 100)));
+    if (kind === 'sat') return { action: 'saturation', value: Math.max(0, Math.min(100, Math.round(100 - pct))), pct, converted: true };
+    if (kind === 'cct') return { action: 'color_temp', value: Math.round(370 - (pct / 100) * 217), pct, converted: true };
+    return { action: 'brightness', value: pct, pct, converted: true };
+  }
+
+
+  function computePeelClipPolygons(peelPct) {
+    const p = Math.max(0, Math.min(100, Number(peelPct) || 0));
+    if (p <= 0.5) {
+      return { overClip: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', flapClip: 'polygon(100% 0%, 100% 0%, 100% 0%)', flapOpacity: 0 };
+    }
+    if (p >= 99.5) {
+      return { overClip: 'polygon(0% 100%, 0% 100%, 0% 100%)', flapClip: 'polygon(0% 0%, 0% 0%, 0% 0%)', flapOpacity: 0 };
+    }
+    // Diagonal peel from top-right (100%, 0%) toward bottom-left (0%, 100%)
+    const d = (p / 100) * 200; // 0..200
+    let pts = [];
+    if (d <= 100) {
+      const xCut = 100 - d;
+      const yCut = d;
+      pts = [`0% 0%`, `${xCut.toFixed(1)}% 0%`, `100% ${yCut.toFixed(1)}%`, `100% 100%`, `0% 100%`];
+      const fx = Math.max(0, xCut - d * 0.28);
+      const fy = Math.min(100, yCut + d * 0.28);
+      return {
+        overClip: `polygon(${pts.join(', ')})`,
+        flapClip: `polygon(${xCut.toFixed(1)}% 0%, 100% ${yCut.toFixed(1)}%, ${fx.toFixed(1)}% ${fy.toFixed(1)}%)`,
+        flapOpacity: 0.92
+      };
+    } else {
+      const rem = 200 - d; // 100..0
+      const xBot = rem;
+      const yLeft = 100 - rem;
+      pts = [`0% ${yLeft.toFixed(1)}%`, `${xBot.toFixed(1)}% 100%`, `0% 100%`];
+      const fx = Math.max(0, xBot * 0.55);
+      const fy = Math.min(100, yLeft + (100 - yLeft) * 0.45);
+      return {
+        overClip: `polygon(${pts.join(', ')})`,
+        flapClip: `polygon(0% ${yLeft.toFixed(1)}%, ${xBot.toFixed(1)}% 100%, ${fx.toFixed(1)}% ${fy.toFixed(1)}%)`,
+        flapOpacity: Math.max(0.18, rem / 110)
+      };
+    }
+  }
+
+  function mountPeelableStage(containerEl, opts) {
+    injectStudioStyles(containerEl);
+    const Cat = root.MiBoxerCatalog;
+    if (!containerEl || !Cat) return null;
+    const overlayModel = typeof opts.overlayModel === 'string' ? (Cat.MODELS.find(m => m.id === opts.overlayModel) || Cat.MODELS[0]) : opts.overlayModel;
+    const baseId = (overlayModel && (overlayModel.baseModel || overlayModel.base)) || opts.physicalModelId || 'B8';
+    const candPhys = opts.physicalModel
+      ? (typeof opts.physicalModel === 'string' ? Cat.MODELS.find(m => m.id === opts.physicalModel) : opts.physicalModel)
+      : null;
+    const physicalModel = (candPhys && (!Cat.areModelsPhysicallyCompatible || Cat.areModelsPhysicallyCompatible(overlayModel, candPhys)))
+      ? candPhys
+      : (Cat.MODELS.find(m => m.id === baseId && !m.isCustom) || Cat.MODELS.find(m => (m.base || m.id) === String(baseId).replace(/-B$/, '') && !m.isCustom) || Cat.MODELS[0]);
+
+    let peelPct = Math.max(0, Math.min(100, Number(opts.initialPeelPct || 0)));
+    const maxH = opts.maxHeight || 'min(60vh, 520px)';
+    const linkedTitle = opts.linkedBadgeText || `Custom Stencil ⇄ Bare ${physicalModel.id}`;
+
+    containerEl.innerHTML = `
+      <div class="mlrs-peel-wrap">
+        <div class="mlrs-peel-bar">
+          <button type="button" class="mlrs-peel-btn" data-role="peel-toggle">🩹 Peel Back Stencil</button>
+          <input type="range" min="0" max="100" value="${peelPct}" data-role="peel-range" style="width:115px;cursor:pointer;accent-color:#0284c7" title="Drag to peel custom vinyl overlay and inspect factory hardware underneath"/>
+          <span data-role="peel-lbl" style="font-weight:700;min-width:118px;text-align:left">Stencil Applied (0%)</span>
+          <span style="color:#0284c7;font-weight:700">${linkedTitle}</span>
+        </div>
+        <div class="mlrs-peel-stack" data-role="peel-stack">
+          <div class="mlrs-peel-under" data-role="under-stage"></div>
+          <div class="mlrs-peel-over" data-role="over-stage"></div>
+          <div class="mlrs-peel-flap" data-role="peel-flap"></div>
+          <div class="mlrs-peel-corner-hit" data-role="peel-corner" title="Click corner to peel back custom stencil & reveal factory remote"></div>
+        </div>
+      </div>
+    `;
+
+    const stackEl = containerEl.querySelector('[data-role="peel-stack"]');
+    const underEl = containerEl.querySelector('[data-role="under-stage"]');
+    const overEl  = containerEl.querySelector('[data-role="over-stage"]');
+    const flapEl  = containerEl.querySelector('[data-role="peel-flap"]');
+    const cornerEl = containerEl.querySelector('[data-role="peel-corner"]');
+    const btnEl   = containerEl.querySelector('[data-role="peel-toggle"]');
+    const rangeEl = containerEl.querySelector('[data-role="peel-range"]');
+    const lblEl   = containerEl.querySelector('[data-role="peel-lbl"]');
+
+    // Under-layer = bare factory hardware (NO facia, NO segmented touchZones stuck on surface!)
+    const underCtrl = mountInteractiveStage(underEl, {
+      model: physicalModel,
+      uid: `${opts.uid || 'peel'}_phys`,
+      maxHeight: maxH,
+      facia: null,
+      touchZones: null,
+      calibration: opts.physicalCalibration || opts.calibration,
+      activeZone: opts.activeZone ?? 1,
+      onZoneChange: (z) => { if (opts.onZoneChange) opts.onZoneChange(z); },
+      onScrubPreview: opts.onScrubPreview,
+      onAction: (act, val, z, lbl) => {
+        if (opts.onPhysicalAction) opts.onPhysicalAction(act, val, z, lbl);
+        else if (opts.onAction) opts.onAction(act, val, z, lbl, 'physical');
+      }
+    });
+
+    // Over-layer = custom vinyl stencil overlay + segmented pads
+    const overCtrl = mountInteractiveStage(overEl, {
+      model: overlayModel,
+      uid: `${opts.uid || 'peel'}_cust`,
+      maxHeight: maxH,
+      facia: opts.facia || (overlayModel && overlayModel.facia),
+      touchZones: opts.touchZones || (overlayModel && overlayModel.touchZones),
+      calibration: opts.calibration,
+      activeZone: opts.activeZone ?? 1,
+      onZoneChange: (z) => { if (opts.onZoneChange) opts.onZoneChange(z); },
+      onScrubPreview: opts.onScrubPreview,
+      onAction: (act, val, z, lbl) => {
+        if (opts.onCustomAction) opts.onCustomAction(act, val, z, lbl);
+        else if (opts.onAction) opts.onAction(act, val, z, lbl, 'custom');
+      }
+    });
+
+    function applyPeel(nextPct, isScrub) {
+      peelPct = Math.max(0, Math.min(100, Number(nextPct) || 0));
+      if (stackEl) stackEl.classList.toggle('scrubbing', Boolean(isScrub));
+      const clips = computePeelClipPolygons(peelPct);
+      if (overEl) {
+        overEl.style.clipPath = clips.overClip;
+        overEl.style.webkitClipPath = clips.overClip;
+        overEl.style.pointerEvents = peelPct >= 85 ? 'none' : 'auto';
+      }
+      if (flapEl) {
+        flapEl.style.clipPath = clips.flapClip;
+        flapEl.style.webkitClipPath = clips.flapClip;
+        flapEl.style.opacity = String(clips.flapOpacity);
+      }
+      if (cornerEl) cornerEl.style.opacity = peelPct >= 95 ? '0.25' : '1';
+      if (rangeEl && Number(rangeEl.value) !== Math.round(peelPct)) rangeEl.value = String(Math.round(peelPct));
+      if (btnEl) {
+        btnEl.classList.toggle('peeled', peelPct >= 50);
+        btnEl.textContent = peelPct >= 85 ? '🩹 Re-Apply Stencil' : (peelPct > 10 ? '🩹 Peel Fully (100%)' : '🩹 Peel Back Stencil');
+      }
+      if (lblEl) {
+        lblEl.textContent = peelPct === 0
+          ? 'Stencil Applied (0%)'
+          : (peelPct >= 98 ? `Bare ${physicalModel.id} Exposed` : `Peeling (${Math.round(peelPct)}% X-Ray)`);
+      }
+      if (opts.onPeelChange) opts.onPeelChange(peelPct);
+    }
+
+    const cyclePeel = () => {
+      if (peelPct < 40) applyPeel(52, false);
+      else if (peelPct < 92) applyPeel(100, false);
+      else applyPeel(0, false);
+    };
+    if (btnEl) btnEl.onclick = cyclePeel;
+    if (cornerEl) cornerEl.onclick = (e) => { e.stopPropagation(); cyclePeel(); };
+    if (rangeEl) {
+      rangeEl.oninput = (e) => applyPeel(Number(e.target.value), true);
+      rangeEl.onchange = (e) => applyPeel(Number(e.target.value), false);
+    }
+
+    applyPeel(peelPct, false);
+
+    return {
+      underCtrl,
+      overCtrl,
+      setPeel: (p) => applyPeel(p, false),
+      getPeel: () => peelPct,
+      pulseAction: (action, zone, isRf, val, sourceLayer) => {
+        if (sourceLayer === 'physical') {
+          if (underCtrl && underCtrl.pulseAction) underCtrl.pulseAction(action, zone, isRf, val);
+          const conv = resolvePhysicalToCustomAction(action, val ?? -1, zone, opts.touchZones || (overlayModel && overlayModel.touchZones), opts.calibration);
+          if (overCtrl && overCtrl.pulseAction) overCtrl.pulseAction(conv.converted ? conv.action : action, zone, isRf, conv.converted ? conv.value : val);
+        } else {
+          if (overCtrl && overCtrl.pulseAction) overCtrl.pulseAction(action, zone, isRf, val);
+          const rev = resolveCustomToPhysicalAction(action, val, zone, opts.touchZones || (overlayModel && overlayModel.touchZones), opts.physicalCalibration || opts.calibration);
+          if (underCtrl && underCtrl.pulseAction) underCtrl.pulseAction(rev.action, zone, isRf, rev.value);
+        }
+      }
+    };
+  }
+
+
+  async function downloadTextFile(filename, content, mimeType, opts) {
+    const safeName = String(filename || 'stencil_1to1.svg').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const mime = mimeType || 'image/svg+xml';
+    const text = String(content || '');
+
+    // 1. If a server-side Content-Disposition attachment stager is provided (e.g. Home Assistant token route), use it first!
+    if (opts && typeof opts.stageServerUrl === 'function') {
+      try {
+        const dlUrl = await opts.stageServerUrl(safeName, text, mime);
+        if (dlUrl) {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = dlUrl;
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 60000);
+          return true;
+        }
+      } catch (_) {}
+    }
+    if (root.__MLRS_STAGE_DOWNLOAD) {
+      try {
+        const dlUrl = await root.__MLRS_STAGE_DOWNLOAD(safeName, text, mime);
+        if (dlUrl) {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = dlUrl;
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 60000);
+          return true;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Native OS Save File Picker (Chromium secure contexts — never hijacked by download extensions)
+    if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+      try {
+        const ext = safeName.endsWith('.json') ? '.json' : '.svg';
+        const handle = await window.showSaveFilePicker({
+          suggestedName: safeName,
+          types: [{ description: ext === '.json' ? 'POD JSON' : '1:1 Vector SVG', accept: { [mime]: [ext] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(text);
+        await writable.close();
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return false;
+      }
+    }
+
+    // 3. Inline Base64 Data-URI download (contains full payload inline so external download extensions can read it, unlike blob: URLs!)
+    try {
+      const b64 = btoa(unescape(encodeURIComponent(text)));
+      const dataUri = `data:application/octet-stream;base64,${b64}`;
+      const a = document.createElement('a');
+      a.href = dataUri;
+      a.setAttribute('download', safeName);
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 4000);
+      return true;
+    } catch (_) {
+      const blob = new Blob([text], { type: 'application/octet-stream' });
+      const bUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = bUrl;
+      a.setAttribute('download', safeName);
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(bUrl); }, 120000);
+      return true;
+    }
+  }
+
+  function mountShowcaseTour(containerEl, opts) {
+    injectStudioStyles(containerEl);
+    if (!containerEl || !opts || !Array.isArray(opts.steps) || !opts.steps.length) return null;
+    const storageKey = `mlrs_tour_${opts.tourId || 'default'}`;
+    let idx = Number(localStorage.getItem(storageKey + '_idx') || 0);
+    if (idx < 0 || idx >= opts.steps.length) idx = 0;
+    let hidden = localStorage.getItem(storageKey + '_hide') === '1';
+
+    function render() {
+      if (hidden) {
+        containerEl.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="mlrs-tour-reopen" data-tour="open">💡 Guided Showcase Tour (${opts.steps.length} Interactive Tips)</button></div>`;
+        const ob = containerEl.querySelector('[data-tour="open"]');
+        if (ob) ob.onclick = () => { hidden = false; localStorage.setItem(storageKey + '_hide', '0'); render(); };
+        return;
+      }
+      const step = opts.steps[idx];
+      const dotsHtml = opts.steps.map((_, di) => `<span class="mlrs-tour-dot ${di === idx ? 'on' : ''}"></span>`).join('');
+      containerEl.innerHTML = `
+        <div class="mlrs-tour-bar">
+          <div class="mlrs-tour-left">
+            <div class="mlrs-tour-icon">💡</div>
+            <div style="min-width:0">
+              <div>
+                <span class="mlrs-tour-step-badge">Guided Tip ${idx + 1} of ${opts.steps.length}</span>
+                <strong style="font-size:13px">${step.title}</strong>
+                <span class="mlrs-tour-dots">${dotsHtml}</span>
+              </div>
+              <div style="margin-top:2px;opacity:0.88;font-size:12px">${step.body}</div>
+            </div>
+          </div>
+          <div class="mlrs-tour-nav">
+            <button type="button" class="mlrs-tour-btn" data-tour="prev">◀ Prev</button>
+            ${step.actionLabel ? `<button type="button" class="mlrs-tour-btn demo" data-tour="demo">✨ ${step.actionLabel}</button>` : ''}
+            <button type="button" class="mlrs-tour-btn" data-tour="next">Next ▶</button>
+            <button type="button" class="mlrs-tour-btn" data-tour="hide" title="Minimize Tour Frame">✕ Hide</button>
+          </div>
+        </div>
+      `;
+      containerEl.querySelector('[data-tour="prev"]').onclick = () => {
+        idx = (idx - 1 + opts.steps.length) % opts.steps.length;
+        localStorage.setItem(storageKey + '_idx', String(idx));
+        render();
+      };
+      containerEl.querySelector('[data-tour="next"]').onclick = () => {
+        idx = (idx + 1) % opts.steps.length;
+        localStorage.setItem(storageKey + '_idx', String(idx));
+        render();
+      };
+      containerEl.querySelector('[data-tour="hide"]').onclick = () => {
+        hidden = true;
+        localStorage.setItem(storageKey + '_hide', '1');
+        render();
+      };
+      const db = containerEl.querySelector('[data-tour="demo"]');
+      if (db && typeof step.onAction === 'function') {
+        db.onclick = () => step.onAction();
+      }
+    }
+    render();
+    return { show: () => { hidden = false; localStorage.setItem(storageKey + '_hide', '0'); render(); } };
+  }
+
   root.MiLightRemoteStudio = {
-    version: '2.3.0',
-    normalizeTouchZones, defaultCalibration, resolvePhysicalToCustomAction, mountInteractiveStage,
+    version: '2.5.0',
+    normalizeTouchZones, defaultCalibration, resolvePhysicalToCustomAction, resolveCustomToPhysicalAction, mountInteractiveStage, mountPeelableStage, downloadTextFile, mountShowcaseTour,
     buildOneToOnePrintSvg, openPrintSheetWindow, openFaciaDesigner
   };
 })(typeof window !== 'undefined' ? window : globalThis);

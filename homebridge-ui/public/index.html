@@ -15,7 +15,7 @@
   .status-strip { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:8px 12px; margin-bottom:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:12px; }
   .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
   .dot.rf { background:var(--rf); } .dot.ui { background:var(--hb-amber); }
-  .remotes-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:12px; margin-bottom:14px; }
+  .remotes-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(265px,1fr)); gap:12px; margin-bottom:14px; }
   .rcard { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px; display:flex; flex-direction:column; align-items:center; transition:border-color .2s,box-shadow .2s; }
   .rcard.hit-rf { border-color:var(--rf); box-shadow:0 0 0 3px rgba(22,163,74,.18); }
   .rcard.hit-ui { border-color:var(--hb-amber); box-shadow:0 0 0 3px rgba(245,158,11,.22); }
@@ -83,26 +83,39 @@
   .hb-modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.62); backdrop-filter:blur(3px); z-index:999; display:none; align-items:center; justify-content:center; padding:14px; }
   .hb-modal-bg.open { display:flex; }
   .hb-modal { background:var(--card, #fff); color:var(--text, #0f172a); border:1px solid var(--border); border-radius:12px; max-width:780px; width:100%; max-height:90vh; overflow-y:auto; padding:18px; box-shadow:0 18px 45px rgba(0,0,0,.35); }
+
+  body { margin: 0; padding: 8px 10px; background: #f1f5f9; box-sizing: border-box; }
+  html, body { height: auto !important; min-height: 0 !important; overflow-x: hidden; }
+  .hb-app-frame { background: #fff; border: 1px solid var(--border-strong); border-radius: 14px; padding: 12px 14px; box-shadow: 0 4px 18px rgba(15,23,42,0.06); display: flex; flex-direction: column; height: var(--hb-fixed-h, 690px); max-height: var(--hb-fixed-h, 690px); overflow: hidden; box-sizing: border-box; }
+  .hb-cockpit { display: grid; grid-template-columns: 255px minmax(380px, 470px) 1fr; gap: 14px; align-items: stretch; flex: 1; min-height: 0; overflow: hidden; }
+  #tab_remotes, #tab_sandbox, #tab_real, #tab_3d, #tab_settings { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+  @media (max-width: 1060px) { .hb-cockpit { grid-template-columns: 1fr; } }
+  .hb-pane { background: var(--stage); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; box-sizing: border-box; }
+  .hb-rem-list { display: flex; flex-direction: column; gap: 7px; max-height: 540px; overflow-y: auto; padding-right: 3px; }
+  .hb-rem-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 11px; border-radius: 10px; background: #fff; border: 1.5px solid var(--border); cursor: pointer; transition: border-color .14s; }
+  .hb-rem-item.active { border-color: var(--hb-orange); box-shadow: 0 0 0 2px rgba(245,158,11,0.18); }
+  .hb-subtabs { display: flex; gap: 5px; background: #fff; padding: 4px; border-radius: 9px; border: 1px solid var(--border); margin-bottom: 12px; flex-wrap: wrap; }
+  .hb-subtab { flex: 1; min-width: 110px; padding: 6px 9px; border-radius: 7px; border: none; background: transparent; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; }
+  .hb-subtab.active { background: var(--hb-orange); color: #fff; }
+  .hb-subbody { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px; flex: 1; }
+
 </style>
 </head>
 <body>
-<div id="hbCustomShowcaseBanner" style="margin:10px 14px 4px;padding:10px 14px;border-radius:9px;border:1px solid rgba(2,132,199,0.35);background:rgba(2,132,199,0.07);font-family:system-ui,sans-serif;font-size:12.5px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
-  <div>
-    <strong>💡 Showcase Tip — Custom Remote Stencils &amp; Multimodal Controls:</strong>
-    Try the 3 Hub-seeded reference remotes (<code>0x3DB0</code> <b>1-Zone Suite B0</b>, <code>0x3DB8</code> <b>8-Room Estate B8</b>, <code>0x3DB4</code> <b>Matte Hybrid B4-B</b>) featuring <b>Short-Tap Step Cycling (1→6)</b> + <b>Long-Hold ON/OFF Toggle</b>, masked unused buttons, and 1:1 printable stencils!
-  </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <a href="http://192.168.6.196:8588" target="_blank" style="padding:5px 10px;border-radius:6px;background:#0284c7;color:#fff;text-decoration:none;font-weight:600;font-size:12px">🏠 Open 3D House Tour (Tips 11–12)</a>
-  </div>
-</div>
+<div class="hb-app-frame">
+<div id="hbCustomShowcaseBanner" style="margin:10px 14px 4px;"></div>
 <div class="nav-bar">
   <div class="tabs">
     <button type="button" class="tab-btn active" id="tbtn_remotes" onclick="switchTab('remotes')">🎛️ 1. Remotes (<span id="remCount">0</span>)</button>
     <button type="button" class="tab-btn" id="tbtn_sandbox" onclick="switchTab('sandbox')">🎯 2. 3D Sandbox Mapper</button>
     <button type="button" class="tab-btn" id="tbtn_real" onclick="switchTab('real')">⚡ 3. Real-World Mapper</button>
     <button type="button" class="tab-btn" id="tbtn_3d" onclick="switchTab('3d')">🏠 4. 3D Smart Home</button>
+    <button type="button" class="tab-btn" id="tbtn_settings" onclick="switchTab('settings')">⚙️ 5. Connection Settings</button>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
+    <button type="button" class="btn" onclick="syncHubRemotesNow()">🔄 Sync Hub Remotes</button>
+    <button type="button" class="btn" id="hbOpenHubBtn" onclick="window.open((cfgObj.hubUrl||'http://milight-hub.local')+'/#/remotes','_blank')">Hub #/remotes ↗</button>
+    <button type="button" class="btn" onclick="openHbStencilDesigner()">🎨 Stencil Studio</button>
     <button type="button" class="btn" id="btnToggleWidth" onclick="toggleModalWidth()">↔ Standard Width</button>
     <button type="button" id="hbTwinFullLink" class="ext-btn" style="cursor:pointer" onclick="openSingletonTwin()">Pop Out Fullscreen 3D (:8588) ↗</button>
   </div>
@@ -116,7 +129,81 @@
   <span id="globalFeed" style="font-family:monospace;font-size:11.5px;color:var(--muted)">Listening to Dual-Radio Hub...</span>
 </div>
 
-<div id="tab_remotes"><div class="remotes-grid" id="remotesGrid">Loading configured remotes...</div></div>
+<div id="tab_remotes">
+  <div class="hb-cockpit">
+    <!-- Left Frame: Compact Remote Selector List -->
+    <div class="hb-pane">
+      <div style="font-size:13px;font-weight:800;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">1. Registered Remotes</div>
+      <div class="hb-rem-list" id="remotesGrid">Loading configured remotes...</div>
+    </div>
+
+    <!-- Center Frame: Full-Scale Peel-Back / Interactive Remote Stage -->
+    <div class="hb-pane" style="align-items:center;justify-content:space-between;text-align:center">
+      <div style="width:100%;display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px solid var(--border)">
+        <div style="text-align:left"><div style="font-size:13.5px;font-weight:800" id="hbCenterTitle">Remote Faceplate</div><div style="font-size:11px;color:var(--muted)" id="hbCenterSub">Select a remote on the left</div></div>
+        <span class="src-pill" id="hbCenterPill">READY</span>
+      </div>
+      <div id="hbPairedStage" style="width:100%;flex:1;display:flex;align-items:center;justify-content:center;padding:8px 0"></div>
+      <div id="hbSingleStageWrap" style="width:100%;display:none;flex-direction:column;align-items:center">
+        <div class="svg-stage" id="hbSingleStage" style="min-height:340px;display:flex;align-items:center;justify-content:center"></div>
+      </div>
+      <div style="width:100%;border-top:1px solid var(--border);padding-top:8px">
+        <div class="zpills" id="hbCenterZones" style="justify-content:center;margin-bottom:4px"></div>
+        <div style="font-size:11.5px;font-family:monospace;color:var(--muted)" id="hbCenterFoot">Click any button, slice, or press physical remote...</div>
+      </div>
+    </div>
+
+    <!-- Right Frame: Tabbed Inspector (One Focused View at a Time!) -->
+    <div class="hb-pane">
+      <div class="hb-subtabs">
+        <button type="button" class="hb-subtab active" id="hbst_link" onclick="switchHbSubTab('link')">🔗 1. Link &amp; Zone Route</button>
+        <button type="button" class="hb-subtab" id="hbst_gest" onclick="switchHbSubTab('gest')">🎛️ 2. Gestures &amp; Segments</button>
+        <button type="button" class="hb-subtab" id="hbst_pod" onclick="switchHbSubTab('pod')">🖨️ 3. Stencil &amp; 1:1 POD</button>
+      </div>
+
+      <div class="hb-subbody" id="hbsp_link">
+        <h4 style="margin:0 0 6px;font-size:14px">🔗 Hardware Pairing &amp; Active Zone Target</h4>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Pair a custom stencil exclusively with its matching base wall panel, or inspect what the selected zone drives.</div>
+        <div id="hbLinkCtrlBar" style="margin-bottom:14px"></div>
+        <div style="padding:12px;border-radius:9px;background:var(--stage);border:1px solid var(--border)">
+          <div style="font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Current Sandbox Target for Active Zone</div>
+          <div id="hbActiveTargetReadout" style="font-size:14px;font-weight:800;color:var(--hb-orange)">→ Z1 Living Curtains</div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn" onclick="switchTab('sandbox')">🎯 Edit Sandbox Zone Matrix</button>
+            <button type="button" class="btn" onclick="switchTab('real')">⚡ Add Real HomeKit / MQTT Rule</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hb-subbody" id="hbsp_gest" style="display:none">
+        <h4 style="margin:0 0 6px;font-size:14px">🎛️ Multi-Tap Gestures &amp; Segmented Touch Surfaces</h4>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Configure 1×, 2×, 3× &amp; Long-Hold timing or divide continuous color wheels and sliders into discrete action buttons.</div>
+        <div id="hbGestSummaryBox" style="padding:12px;border-radius:9px;background:var(--stage);border:1px solid var(--border);margin-bottom:12px;font-size:12.5px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" onclick="openHbMacroModal(hbSelectedDevId)">🎛️ Configure Gestures &amp; Ring/Bar Segments</button>
+          <button type="button" class="btn" onclick="openHbStencilDesigner(hbSelectedDevId)">🎨 Open Visual Stencil Studio</button>
+        </div>
+      </div>
+
+      <div class="hb-subbody" id="hbsp_pod" style="display:none">
+        <h4 style="margin:0 0 6px;font-size:14px">🖨️ Custom Stencil Designer &amp; 1:1 Print / POD</h4>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Design room/device keycap stencils or export calibrated 1:1 millimeter vector decals.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div><label>Selected Remote</label><select id="hbPodRemSel" onchange="hbSelectStudioRemote(Number(this.value))"></select></div>
+          <div><label>Print / Sticker Material</label><select id="hbPodMatSel" onchange="updateHbPodSpecs()"><option value="peelable_matte_vinyl">Peelable / Repositionable Matte Vinyl</option><option value="permanent_matte_vinyl">Permanent Matte Vinyl</option><option value="laminated_pet">Laminated PET Decal</option></select></div>
+        </div>
+        <div id="hbPodSpecs" style="padding:9px 11px;border-radius:8px;background:var(--stage);border:1px solid var(--border);margin-bottom:12px;font-size:12px;font-weight:700"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" onclick="openHbStencilDesigner(hbSelectedDevId)">🎨 Launch Fullscreen Stencil Studio</button>
+          <button type="button" class="btn" onclick="hbDownloadOneToOneSvg()">⬇ Download 1:1 SVG</button>
+          <button type="button" class="btn" onclick="hbPrintOneToOne()">🖨️ Print Sheet (10mm Ruler)</button>
+          <button type="button" class="btn" onclick="hbDownloadPodJson()">📦 Download POD JSON</button>
+        </div>
+      </div>
+      <div id="hbPairModeBtns" style="display:none"></div>
+    </div>
+  </div>
+</div>
 
 <div id="tab_sandbox" style="display:none">
   <div class="card">
@@ -197,19 +284,19 @@
   </div>
 </div>
 
-<details class="cfg-box">
-  <summary style="font-weight:800;cursor:pointer">⚙️ Broker, Hub URL &amp; HomeKit Exposure Settings</summary>
+<div id="tab_settings" style="display:none"><div class="card"><h3 class="card-title">⚙️ Broker, ESP32 Hub URL &amp; HomeKit Exposure Settings</h3><div class="card-sub" style="margin-bottom:12px">Saved to Homebridge config.json when you click Save below.</div>
   <div class="grid-2" style="margin-top:10px">
     <div><label>MQTT Broker Host</label><input id="mqttHost" value="127.0.0.1"></div>
     <div><label>MQTT Broker Port</label><input id="mqttPort" type="number" value="1883"></div>
   </div>
   <div class="grid-2" style="margin-top:10px">
     <div><label>HomeKit Exposure Mode</label><select id="exposureMode"><option value="none">Hidden / Clean UI (Recommended)</option><option value="stateless">Stateless Programmable Buttons</option></select></div>
-    <div><label>ESP32 Mi-Light Hub URL</label><input id="hubUrl" value="http://192.168.7.121"></div>
+    <div><label>ESP32 Mi-Light Hub URL</label><input id="hubUrl" value="http://milight-hub.local"></div>
   </div>
   <div id="cfgStatus" style="margin-top:8px;font-size:11.5px;color:var(--rf);font-weight:700"></div>
-</details>
+</div></div>
 
+</div>
 <div class="hb-modal-bg" id="hbMacroModal">
   <div class="hb-modal">
     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:12px">
@@ -275,12 +362,39 @@
 <script src="./three.min.js"></script>
 <script>
 const isStandalone8588 = !window.homebridge;
+function expandParentHomebridgeModal(wide) {
+  try {
+    if (window.parent && window.parent !== window && window.parent.document) {
+      const pdoc = window.parent.document;
+      let st = pdoc.getElementById('milight-hb-wide-style');
+      if (!st) { st = pdoc.createElement('style'); st.id = 'milight-hb-wide-style'; pdoc.head.appendChild(st); }
+      const pH = Math.max(600, Math.min(960, (window.parent.innerHeight || 860) - 125));
+      document.documentElement.style.setProperty('--hb-fixed-h', (pH - 18) + 'px');
+      st.textContent = wide
+        ? `.modal-dialog { max-width: 96vw !important; width: 96vw !important; margin: 1vh auto !important; } .modal-body { padding: 8px 12px !important; max-height: ${pH + 10}px !important; overflow: hidden !important; } iframe { height: ${pH}px !important; max-height: ${pH}px !important; min-height: 0 !important; }`
+        : '';
+    }
+  } catch (_) {}
+}
+expandParentHomebridgeModal(true);
+try { window.parent.addEventListener('resize', () => { if (isWideModal) expandParentHomebridgeModal(true); }); } catch (_) {}
+
 async function hydrateHubCustomMetadata() {
   try {
-    if (window.MiBoxerCatalog && MiBoxerCatalog.syncCustomModelsFromHub) {
-      await MiBoxerCatalog.syncCustomModelsFromHub('http://192.168.7.121');
+    if (window.homebridge) {
+      const hi = await homebridge.request('/host-info').catch(() => null);
+      if (hi && hi.hubUrl) cfgObj.hubUrl = hi.hubUrl;
+      const cm = await homebridge.request('/custom-models').catch(() => []);
+      if (Array.isArray(cm) && cm.length && window.MiBoxerCatalog && MiBoxerCatalog.registerCustomModels) {
+        MiBoxerCatalog.registerCustomModels(cm);
+      }
     }
-    const hr = await fetch('http://192.168.7.121/api/remotes', { cache: 'no-store' });
+    const hubBase = (cfgObj.hubUrl || 'http://milight-hub.local').replace(/\/+$/, '');
+    if (window.MiBoxerCatalog && MiBoxerCatalog.syncCustomModelsFromHub) {
+      await MiBoxerCatalog.syncCustomModelsFromHub(hubBase).catch(() => {});
+    }
+    const hr = await fetch(hubBase + '/api/remotes', { cache: 'no-store' }).catch(() => null);
+    if (!hr) return;
     if (hr.ok) {
       const hubList = await hr.json();
       const byId = new Map((Array.isArray(hubList) ? hubList : []).map((x) => [Number(x.device_id), x]));
@@ -292,6 +406,24 @@ async function hydrateHubCustomMetadata() {
   } catch (_) {}
 }
 setTimeout(hydrateHubCustomMetadata, 250);
+
+function initHbGuidedTour() {
+  const box = document.getElementById('hbCustomShowcaseBanner');
+  if (!box || !window.MiLightRemoteStudio || !MiLightRemoteStudio.mountShowcaseTour) return;
+  MiLightRemoteStudio.mountShowcaseTour(box, {
+    tourId: 'hb_plugin_studio',
+    steps: [
+      { title: '1. Live Remotes & Peel-Back Stencil X-Ray', body: 'Physical 2.4 GHz presses flash Green (RF) and UI clicks flash Amber. Click Peel Back Stencil to reveal the bare physical panel paired underneath!', actionLabel: 'Peel Back Stencil (55%)', onAction: () => { switchTab('remotes'); if (hbPeelCtrl && hbPeelCtrl.underCtrl) { const r = document.querySelector('[data-role="peel-range"]'); if (r) { r.value = '55'; r.dispatchEvent(new Event('change')); } } } },
+      { title: '2. Fullscreen Stencil Studio & Multi-Tap Segments', body: 'Open Stencil Studio to customize icons/palettes and Step-Hold buttons, or click Zones/Taps to split rings and sliders into discrete pads.', actionLabel: 'Open Stencil Studio', onAction: () => openHbStencilDesigner() },
+      { title: '3. 3D Sandbox Zone Matrix', body: 'Route any remote and zone (Z0 Master to Z8) across the 10 interactive 3D Smart Home rooms, blinds, fans, AC, and garage doors.', actionLabel: 'Open Sandbox Mapper', onAction: () => switchTab('sandbox') },
+      { title: '4. Real-World HomeKit / MQTT / Webhook Mapper', body: 'Click Learn Physical Remote Button, press your wall panel, and bind gestures directly to real Homebridge accessories, MQTT topics, or HA events.', actionLabel: 'Open Real-World Mapper', onAction: () => switchTab('real') },
+      { title: '5. Embedded & Fullscreen 3D Smart Home (:8588)', body: 'Test remotes live against the interactive 3D house dock right inside Tab 4, or pop out the singleton fullscreen 3D tour.', actionLabel: 'Open 3D Smart Home Tab', onAction: () => switchTab('3d') },
+      { title: '6. 1:1 Calibrated Print Sheet & POD Export', body: 'Expand the 1:1 Print & POD drawer in Tab 1 to export extension-safe 1:1 millimeter SVGs, 10 mm ruler print sheets, and POD JSON.', actionLabel: 'Download 1:1 SVG', onAction: () => { switchTab('remotes'); hbDownloadOneToOneSvg(); } }
+    ]
+  });
+}
+setTimeout(initHbGuidedTour, 350);
+
 const apiReq = async (route, body) => {
   if (window.homebridge) return homebridge.request(route, body);
   const map = { '/twin-state':'/api/state', '/routing-get':'/api/routing', '/routing-save':'/api/routing', '/routing-reset':'/api/routing/reset_defaults', '/real-devices':'/api/real_devices', '/test-rule':'/api/test_rule', '/twin-cmd':'/api/command', '/virtual-send':'/api/virtual_send', '/remote-upsert':'/api/remotes' };
@@ -300,7 +432,7 @@ const apiReq = async (route, body) => {
   return r.json();
 };
 
-let cfgObj = { platform:'MiLightRemotePlatform', name:'MiLight Remotes', mqttHost:'127.0.0.1', mqttPort:1883, hubUrl:'http://192.168.7.121', exposureMode:'none', enableSmartHomeTwin:true, twinPort:8588, haDiscovery:true };
+let cfgObj = { platform:'MiLightRemotePlatform', name:'MiLight Remotes', mqttHost:'127.0.0.1', mqttPort:1883, hubUrl:'http://milight-hub.local', exposureMode:'none', enableSmartHomeTwin:true, twinPort:8588, haDiscovery:true };
 let remotes=[], activeZoneByDev={}, lastSeenSeq=-1, localUiSuppress={}, learnModeActive=false, m3dRemIdx=0, isWideModal=true;
 let routingState = { sandboxEnabled:true, sandboxBindings:[], realRules:[] }, realHbDevices=[];
 
@@ -327,7 +459,7 @@ try { if (window.top) window.top.name = 'milight_hb_settings_parent'; } catch (_
 function getTwinFullUrl() {
   const host = (location.hostname && location.hostname.length > 1)
     ? location.hostname
-    : (document.referrer ? new URL(document.referrer).hostname : '192.168.6.196');
+    : (document.referrer ? new URL(document.referrer).hostname : location.hostname || 'localhost');
   const hbOrigin = encodeURIComponent((document.referrer ? new URL(document.referrer).origin : `http://${host}:8581`));
   return `http://${host}:${cfgObj.twinPort || 8588}/?hb=${hbOrigin}`;
 }
@@ -367,10 +499,11 @@ function applyModalWidth() {
     setTimeout(() => window.dispatchEvent(new Event('resize')), 180);
   } catch (_) {}
 }
-function toggleModalWidth() { isWideModal = !isWideModal; applyModalWidth(); }
+function toggleModalWidth() { isWideModal = !isWideModal; expandParentHomebridgeModal(isWideModal); document.getElementById('btnToggleWidth').textContent = isWideModal ? '↔ Standard Width' : '⤢ Full Width (96vw)'; return; }
+function _unusedOldToggleModalWidth() { isWideModal = !isWideModal; applyModalWidth(); }
 
 function switchTab(name) {
-  ['remotes','sandbox','real','3d'].forEach((t) => {
+  ['remotes','sandbox','real','3d','settings'].forEach((t) => {
     document.getElementById('tab_'+t).style.display = t === name ? 'block' : 'none';
     document.getElementById('tbtn_'+t).classList.toggle('active', t === name);
   });
@@ -389,7 +522,7 @@ function lookupTargetLabel(hex, z) {
 
 async function initUi() {
   applyModalWidth();
-  let hostInfo = { lanIp: location.hostname || '192.168.6.196', twinPort: 8588 };
+  let hostInfo = { lanIp: location.hostname || location.hostname || 'localhost', twinPort: 8588 };
   if (window.homebridge) {
     try { hostInfo = await homebridge.request('/host-info') || hostInfo; } catch (_) {}
     try { const l = await homebridge.getPluginConfig(); if (Array.isArray(l)&&l[0]) cfgObj = Object.assign(cfgObj, l[0]); } catch (_) {}
@@ -425,36 +558,300 @@ async function saveCfg() {
   cfgObj.mqttHost = document.getElementById('mqttHost').value.trim() || '127.0.0.1';
   cfgObj.mqttPort = Number(document.getElementById('mqttPort').value) || 1883;
   cfgObj.exposureMode = document.getElementById('exposureMode').value || 'none';
-  cfgObj.hubUrl = document.getElementById('hubUrl').value.trim() || 'http://192.168.7.121';
+  cfgObj.hubUrl = document.getElementById('hubUrl').value.trim() || 'http://milight-hub.local';
   await homebridge.updatePluginConfig([cfgObj]);
   document.getElementById('cfgStatus').textContent = 'Staged — click SAVE at bottom-right to write config.json.';
 }
 
+
+let hbSelectedDevId = null, hbPairMode = 'split';
+function isHbCustomRem(r) {
+  if (!r) return false;
+  const vm = String(r.visual_model || r.model || '');
+  return vm.startsWith('CUST_') || String(r.name || '').includes('[Showcase]');
+}
+function isHbPairCompatible(custRem, physRem) {
+  if (!custRem || !physRem || !window.MiBoxerCatalog || !MiBoxerCatalog.areModelsPhysicallyCompatible) return false;
+  return MiBoxerCatalog.areModelsPhysicallyCompatible(custRem, physRem);
+}
+function findHbLinkedPair(r) {
+  if (!r || !Array.isArray(remotes)) return null;
+  const devId = getDevId(r), hx = getHex(devId).toUpperCase();
+  if (isHbCustomRem(r)) {
+    const lId = Number(r.linked_device_id || 0);
+    const lHx = String(r.linked_hex_id || '').toUpperCase();
+    const phys = remotes.find((p) => (lId && getDevId(p) === lId) || (lHx && getHex(getDevId(p)).toUpperCase() === lHx));
+    return (phys && isHbPairCompatible(r, phys)) ? { custom: r, physical: phys } : null;
+  }
+  const cust = remotes.find((c) => isHbCustomRem(c) && (Number(c.linked_device_id || 0) === devId || String(c.linked_hex_id || '').toUpperCase() === hx) && isHbPairCompatible(c, r));
+  return cust ? { custom: cust, physical: r } : null;
+}
+async function syncHubRemotesNow() {
+  await hydrateHubCustomMetadata();
+  if (window.homebridge) {
+    const rList = await homebridge.request('/remotes').catch(() => []);
+    if (Array.isArray(rList) && rList.length) remotes = rList;
+    await hydrateHubCustomMetadata();
+  }
+  renderRemotesGrid();
+}
+function hbSelectStudioRemote(devId) {
+  hbSelectedDevId = Number(devId);
+  renderRemotesGrid();
+}
+async function saveHbRemoteLink(custRem, physRem) {
+  const cId = getDevId(custRem), cHex = getHex(cId);
+  const pId = physRem ? getDevId(physRem) : 0, pHex = physRem ? getHex(pId) : '';
+  const payload = { device_id: cId, hex_id: cHex, linked_device_id: pId, linked_hex_id: pHex };
+  if (window.homebridge) {
+    await homebridge.request('/studio-meta', payload).catch(() => {});
+  } else {
+    await fetch(`${cfgObj.hubUrl || 'http://milight-hub.local'}/api/remotes/studio_meta`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    }).catch(() => {});
+  }
+  custRem.linked_device_id = pId;
+  custRem.linked_hex_id = pHex;
+  if (pId) hbPairMode = 'split';
+  await syncHubRemotesNow();
+}
+function openHbStencilDesigner(devIdOverride) {
+  if (!window.MiLightRemoteStudio || !MiLightRemoteStudio.openFaciaDesigner) return;
+  const r = remotes.find((x) => getDevId(x) === Number(devIdOverride || hbSelectedDevId)) || remotes[0];
+  if (!r) return;
+  const devId = getDevId(r), hex = getHex(devId), vm = r.visual_model || r.model || 'B8';
+  const mod = (window.MiBoxerCatalog && MiBoxerCatalog.MODELS.find((m) => m.id === vm)) || MiBoxerCatalog.MODELS[0];
+  MiLightRemoteStudio.openFaciaDesigner({
+    hubUrl: cfgObj.hubUrl || 'http://milight-hub.local',
+    model: mod,
+    hexId: hex,
+    remoteName: r.name || hex,
+    facia: r.facia || (mod && mod.facia),
+    touchZones: r.touch_zones || (mod && mod.touchZones),
+    onTestAction: (act, val, z) => {
+      triggerVisualFeedback(devId, act, z, 'ui', val);
+      apiReq('/virtual-send', { device_id: devId, remote_type: r.remote_type || 'fut089', group_id: z, action: act, value: val });
+    },
+    onOpenGestures: () => openHbMacroModal(devId),
+    onSaveCustomModel: async () => { await syncHubRemotesNow(); },
+    onDeleteCustomModel: async () => { await syncHubRemotesNow(); }
+  });
+}
+function updateHbPodSpecs() {
+  const specEl = document.getElementById('hbPodSpecs');
+  if (!specEl || !window.MiBoxerCatalog || !remotes.length) return;
+  const r = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  const vm = r.visual_model || r.model || 'B8';
+  const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
+  const d = MiBoxerCatalog.getPhysicalDims(mod);
+  const mat = document.getElementById('hbPodMatSel')?.value || 'peelable_matte_vinyl';
+  specEl.textContent = `Physical Size: ${d.width_mm} × ${d.height_mm} mm (${d.form_factor || d.mount}) • Material: ${mat} • Remote: ${r.name || getHex(getDevId(r))} (${getHex(getDevId(r))})`;
+}
+function hbPrintOneToOne() {
+  const r = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  if (!r || !window.MiLightRemoteStudio || !window.MiBoxerCatalog) return;
+  const vm = r.visual_model || r.model || 'B8';
+  const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
+  MiLightRemoteStudio.openPrintSheetWindow(mod, r.facia, r.touch_zones, activeZoneByDev[getDevId(r)] ?? 1, `${r.name || vm} (${getHex(getDevId(r))})`);
+}
+function hbDownloadOneToOneSvg() {
+  const r = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  if (!r || !window.MiLightRemoteStudio || !window.MiBoxerCatalog) return;
+  const vm = r.visual_model || r.model || 'B8', hx = getHex(getDevId(r));
+  const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
+  const svg = MiLightRemoteStudio.buildOneToOnePrintSvg(mod, r.facia, r.touch_zones, activeZoneByDev[getDevId(r)] ?? 1);
+  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_1to1.svg`, svg, 'image/svg+xml');
+}
+function hbDownloadPodJson() {
+  const r = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  if (!r || !window.MiLightRemoteStudio || !window.MiBoxerCatalog) return;
+  const vm = r.visual_model || r.model || 'B8', hx = getHex(getDevId(r));
+  const mod = MiBoxerCatalog.MODELS.find((m) => m.id === vm) || MiBoxerCatalog.MODELS[0];
+  const dims = MiBoxerCatalog.getPhysicalDims(mod);
+  const payload = {
+    schema: 'milight_remote_studio.pod_order.v1',
+    remote_hex: hx, remote_name: r.name || mod.name, model_id: mod.id,
+    physical_dimensions_mm: dims, scale: '1:1',
+    material: document.getElementById('hbPodMatSel')?.value || 'peelable_matte_vinyl',
+    svg_1to1: MiLightRemoteStudio.buildOneToOnePrintSvg(mod, r.facia, r.touch_zones, activeZoneByDev[getDevId(r)] ?? 1)
+  };
+  MiLightRemoteStudio.downloadTextFile(`${vm.toLowerCase()}_${hx.toLowerCase()}_pod_order.json`, JSON.stringify(payload, null, 2), 'application/json');
+}
+let hbPeelCtrl = null;
+function renderHbLinkedStudio() {
+  if (!remotes.length) return;
+  if (!hbSelectedDevId || !remotes.some((x) => getDevId(x) === Number(hbSelectedDevId))) {
+    const linkedFirst = remotes.find((x) => findHbLinkedPair(x));
+    hbSelectedDevId = getDevId(linkedFirst || remotes[0]);
+  }
+  const cur = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  const curId = getDevId(cur), curHex = getHex(curId);
+  const podSel = document.getElementById('hbPodRemSel');
+  if (podSel) {
+    podSel.innerHTML = remotes.map((r) => `<option value="${getDevId(r)}" ${getDevId(r)===curId?'selected':''}>${r.name||getHex(getDevId(r))} (${getHex(getDevId(r))})</option>`).join('');
+  }
+  updateHbPodSpecs();
+
+  const pair = findHbLinkedPair(cur);
+  const bar = document.getElementById('hbLinkCtrlBar');
+  const modeBox = document.getElementById('hbPairModeBtns');
+  const stage = document.getElementById('hbPairedStage');
+  const isCust = isHbCustomRem(cur);
+  const physList = remotes.filter((p) => !isHbCustomRem(p) && getDevId(p) !== curId && isHbPairCompatible(cur, p));
+  const custList = remotes.filter((c) => isHbCustomRem(c) && getDevId(c) !== curId && isHbPairCompatible(c, cur));
+
+  if (bar) {
+    if (isCust) {
+      const lId = pair ? getDevId(pair.physical) : 0;
+      bar.innerHTML = `<div style="padding:10px 12px;border-radius:8px;border:1px solid ${pair?'#16a34a':'var(--border-strong)'};background:${pair?'rgba(22,163,74,0.08)':'#fff'};display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px">
+        <div><b>${pair ? `🟢 Paired Hardware: Custom Stencil ${curHex} 🩹 Applied over ${pair.physical.name || getHex(lId)} (${getHex(lId)})` : `🔗 Link Custom Stencil (${curHex}) to Physical Hardware`}</b></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select onchange="saveHbRemoteLink(remotes.find(x=>getDevId(x)===${curId}), this.value ? remotes.find(x=>getDevId(x)===Number(this.value)) : null)" style="padding:5px 8px;border-radius:6px">
+            <option value="">Unlinked (Virtual ${curHex} Only)</option>
+            ${physList.map((p)=>`<option value="${getDevId(p)}" ${getDevId(p)===lId?'selected':''}>${p.name||getHex(getDevId(p))} (${getHex(getDevId(p))} • ${p.visual_model||p.model||''})</option>`).join('')}
+          </select>
+          <button type="button" class="btn" onclick="openHbStencilDesigner(${curId})">🎨 Edit Stencil</button>
+          <button type="button" class="btn" onclick="openHbMacroModal(${curId})">🎛️ Zones/Taps</button>
+        </div>
+      </div>`;
+    } else if (pair) {
+      const cId = getDevId(pair.custom);
+      bar.innerHTML = `<div style="padding:10px 12px;border-radius:8px;border:1px solid #0284c7;background:rgba(2,132,199,0.08);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px">
+        <div><b>🟢 Paired Custom Stencil: ${pair.custom.name || getHex(cId)} (${getHex(cId)})</b> — Peel back the stencil below to inspect bare ${curHex} hardware underneath!</div>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn" onclick="openHbStencilDesigner(${cId})">🎨 Edit Stencil</button>
+          <button type="button" class="btn" onclick="saveHbRemoteLink(remotes.find(x=>getDevId(x)===${cId}), null)">Unlink</button>
+        </div>
+      </div>`;
+    } else if (custList.length) {
+      bar.innerHTML = `<div style="padding:10px 12px;border-radius:8px;border:1px solid var(--border-strong);background:#fff;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px">
+        <div><b>🔗 Apply a Custom Stencil Overlay onto ${cur.name || curHex} (${curHex})</b></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="hbPickCustForPhys" style="padding:5px 8px;border-radius:6px">${custList.map((c)=>`<option value="${getDevId(c)}">${c.name||getHex(getDevId(c))} (${getHex(getDevId(c))})</option>`).join('')}</select>
+          <button type="button" class="btn btn-primary" onclick="saveHbRemoteLink(remotes.find(x=>getDevId(x)===Number(document.getElementById('hbPickCustForPhys').value)), remotes.find(x=>getDevId(x)===${curId}))">🩹 Link &amp; Apply Stencil</button>
+        </div>
+      </div>`;
+    } else {
+      bar.innerHTML = '';
+    }
+  }
+
+  if (modeBox) modeBox.innerHTML = '';
+  hbPeelCtrl = null;
+  if ((pair || isCust) && stage && window.MiLightRemoteStudio && MiLightRemoteStudio.mountPeelableStage && window.MiBoxerCatalog) {
+    const custObj = pair ? pair.custom : cur;
+    const physObj = pair ? pair.physical : null;
+    const cId = getDevId(custObj), pId = physObj ? getDevId(physObj) : cId;
+    const cVm = custObj.visual_model || custObj.model || 'B8';
+    const cMod = MiBoxerCatalog.MODELS.find((m) => m.id === cVm) || MiBoxerCatalog.MODELS[0];
+    const pVm = physObj ? (physObj.visual_model || physObj.model || 'B8') : (cMod.baseModel || cMod.base || 'B8');
+    const pMod = MiBoxerCatalog.MODELS.find((m) => m.id === pVm && !m.isCustom) || MiBoxerCatalog.MODELS[0];
+
+    stage.style.display = 'flex';
+    stage.innerHTML = `<div id="hbPeelMount" style="width:100%;max-width:520px;height:100%;display:flex;align-items:center;justify-content:center;margin:0 auto"></div>`;
+    hbPeelCtrl = MiLightRemoteStudio.mountPeelableStage(document.getElementById('hbPeelMount'), {
+      overlayModel: cMod,
+      physicalModel: pMod,
+      uid: `hbp_${cId}`,
+      maxHeight: '465px',
+      facia: custObj.facia,
+      touchZones: custObj.touch_zones,
+      calibration: custObj.calibration,
+      physicalCalibration: physObj ? physObj.calibration : custObj.calibration,
+      activeZone: activeZoneByDev[cId] ?? 1,
+      linkedBadgeText: physObj ? `${getHex(cId)} 🩹 over Live ${getHex(pId)}` : `${getHex(cId)} 🩹 over Bare ${pMod.id}`,
+      onZoneChange: (z) => selectZone(cId, z),
+      onCustomAction: (act, val, z) => {
+        localUiSuppress[`${cId}:${z}`] = Date.now();
+        triggerVisualFeedback(cId, act, z, 'ui', val);
+        apiReq('/virtual-send', { device_id: cId, remote_type: custObj.remote_type || 'fut089', group_id: z, action: act, value: val });
+      },
+      onPhysicalAction: (act, val, z) => {
+        localUiSuppress[`${pId}:${z}`] = Date.now();
+        triggerVisualFeedback(pId, act, z, 'ui', val);
+        apiReq('/virtual-send', { device_id: pId, remote_type: (physObj && physObj.remote_type) || 'fut089', group_id: z, action: act, value: val });
+      }
+    });
+  } else if (stage) {
+    stage.style.display = 'none';
+    stage.innerHTML = '';
+  }
+}
+let hbActiveSubTab = 'link';
+function switchHbSubTab(name) {
+  hbActiveSubTab = name;
+  ['link','gest','pod'].forEach((k) => {
+    const b = document.getElementById('hbst_'+k), p = document.getElementById('hbsp_'+k);
+    if (b) b.classList.toggle('active', k === name);
+    if (p) p.style.display = k === name ? 'block' : 'none';
+  });
+}
+
 function renderRemotesGrid() {
   const g = document.getElementById('remotesGrid');
-  if (!remotes.length) { g.innerHTML = '<div style="padding:16px;color:var(--muted)">No remotes found on Hub.</div>'; return; }
+  if (!remotes.length) { g.innerHTML = '<div style="padding:14px;color:var(--muted)">No remotes found on Hub.</div>'; return; }
+  if (!hbSelectedDevId || !remotes.some((x) => getDevId(x) === Number(hbSelectedDevId))) {
+    const linkedFirst = remotes.find((x) => findHbLinkedPair(x));
+    hbSelectedDevId = getDevId(linkedFirst || remotes[0]);
+  }
   g.innerHTML = remotes.map((r) => {
     const devId = getDevId(r), hex = getHex(devId), vm = r.visual_model || r.model || 'FUT089';
-    const maxZ = Math.min(Math.max(Number(r.num_zones || r.zones || 8), 1), 8);
     if (activeZoneByDev[devId] === undefined) activeZoneByDev[devId] = 1;
-    const curZ = activeZoneByDev[devId];
-    const zBtns = [0,...Array.from({length:maxZ},(_,i)=>i+1)].map((z)=>`<button type="button" class="zpill ${curZ===z?'active':''}" id="zp_${devId}_${z}" onclick="selectZone(${devId},${z})">${z===0?'All':'Z'+z}</button>`).join('');
-    return `<div class="rcard" id="rcard_${devId}">
-      <div class="rcard-hdr"><div><div class="rcard-title">${r.name||vm}</div><div class="rcard-sub">${vm} • ${hex} • ${r.remote_type||'fut089'}${r.linked_hex_id ? ' • 🔗 '+r.linked_hex_id : ''}</div></div><div style="display:flex;gap:4px;align-items:center"><button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="openHbMacroModal(${devId})">🎛️ Zones/Taps</button><span class="src-pill" id="spill_${devId}">READY</span></div></div>
-      <div class="zpills" id="zpills_${devId}">${zBtns}</div>
-      <div class="ztarget-hint" id="zhint_${devId}">&rarr; ${lookupTargetLabel(hex, curZ)}</div>
-      <div class="svg-stage" id="stage_${devId}"></div>
-      <div class="rcard-foot" id="foot_${devId}">Click remote or press physical button...</div>
+    const isSel = Number(hbSelectedDevId) === devId;
+    const p = findHbLinkedPair(r);
+    const linkTag = p ? (isHbCustomRem(r) ? `<div style="color:#16a34a;font-size:10.5px;font-weight:800">🔗 Live ${getHex(getDevId(p.physical))}</div>` : `<div style="color:#0284c7;font-size:10.5px;font-weight:800">🔗 Overlay ${getHex(getDevId(p.custom))}</div>`) : '';
+    return `<div class="hb-rem-item ${isSel ? 'active' : ''}" onclick="hbSelectStudioRemote(${devId})">
+      <div style="min-width:0">
+        <div style="font-size:12.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name || vm}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:monospace">${vm} • ${hex}</div>
+        ${linkTag}
+      </div>
+      <span class="src-pill" id="spill_${devId}">Z${activeZoneByDev[devId]}</span>
     </div>`;
   }).join('');
-  remotes.forEach((r) => mountSvgInto(`stage_${getDevId(r)}`, r, `hb_${getDevId(r)}`));
+
+  renderHbLinkedStudio();
+  const cur = remotes.find((x) => getDevId(x) === Number(hbSelectedDevId)) || remotes[0];
+  const curId = getDevId(cur), curHex = getHex(curId), vm = cur.visual_model || cur.model || 'FUT089';
+  const maxZ = Math.min(Math.max(Number(cur.num_zones || cur.zones || 8), 1), 8);
+  const curZ = activeZoneByDev[curId] ?? 1;
+  const cTitle = document.getElementById('hbCenterTitle'), cSub = document.getElementById('hbCenterSub'), cZones = document.getElementById('hbCenterZones');
+  if (cTitle) cTitle.textContent = `${cur.name || vm} (${curHex})`;
+  if (cSub) cSub.textContent = `${vm} • ${cur.remote_type || 'fut089'} • ${maxZ} Zones`;
+  if (cZones) {
+    cZones.innerHTML = [0,...Array.from({length:maxZ},(_,i)=>i+1)].map((z)=>`<button type="button" class="zpill ${curZ===z?'active':''}" onclick="selectZone(${curId},${z})">${z===0?'All':'Z'+z}</button>`).join('');
+  }
+  const tgtEl = document.getElementById('hbActiveTargetReadout');
+  if (tgtEl) tgtEl.textContent = `Zone ${curZ} → ${lookupTargetLabel(curHex, curZ)}`;
+  const gestBox = document.getElementById('hbGestSummaryBox');
+  if (gestBox) {
+    const gs = cur.gestures || { short:true, long:true, double:false, triple:false, window_ms:360 };
+    const tz = normHbTouchZones(cur.touch_zones);
+    const segs = [tz.hue_ring.enabled ? `Wheel (${tz.hue_ring.segments} slices)` : '', tz.sat_bar.enabled ? `Sat Bar (${tz.sat_bar.segments} slots)` : '', tz.cct_bar.enabled ? `CCT Bar (${tz.cct_bar.segments} slots)` : '', tz.bri_bar.enabled ? `Bri Bar (${tz.bri_bar.segments} slots)` : ''].filter(Boolean);
+    gestBox.innerHTML = `<div><b>Enabled Taps:</b> ${[gs.short!==false?'1× Short':'', gs.long!==false?'Long Hold':'', gs.double?'2× Double':'', gs.triple?'3× Triple':''].filter(Boolean).join(' • ')} (${gs.window_ms||360} ms window)</div><div style="margin-top:4px"><b>Segmented Surfaces:</b> ${segs.length ? segs.join(', ') : 'Continuous analog mode (none segmented)'}</div>`;
+  }
+
+  // If non-custom unlinked hardware remote is selected, render it cleanly at full scale in #hbSingleStage!
+  const singleWrap = document.getElementById('hbSingleStageWrap');
+  const pairStage = document.getElementById('hbPairedStage');
+  if (!findHbLinkedPair(cur) && !isHbCustomRem(cur)) {
+    if (pairStage) pairStage.style.display = 'none';
+    if (singleWrap) {
+      singleWrap.style.display = 'flex';
+      mountSvgInto('hbSingleStage', cur, `hb_full_${curId}`);
+      const sSvg = document.querySelector('#hbSingleStage svg');
+      if (sSvg) { sSvg.style.maxHeight = '465px'; sSvg.style.height = '100%'; sSvg.style.width = 'auto'; }
+    }
+  } else if (singleWrap) {
+    singleWrap.style.display = 'none';
+  }
 }
 
 function mountSvgInto(elId, r, uid) {
   const box = document.getElementById(elId); if (!box || !window.MiBoxerCatalog) return;
   const devId = getDevId(r), vm = r.visual_model || r.model || '', rtype = r.remote_type || 'fut089';
   const mod = MiBoxerCatalog.MODELS.find((m)=>m.id===vm) || MiBoxerCatalog.MODELS.find((m)=>m.proto===rtype) || MiBoxerCatalog.MODELS[0];
-  box.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid, facia: r.facia, touchZones: r.touch_zones, activeZone: Number(activeZoneByDev[devId] ?? 1) });
+  box.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size: elId==='hbSingleStage' ? 'large' : 'thumb', uid, facia: r.facia, touchZones: r.touch_zones, activeZone: Number(activeZoneByDev[devId] ?? 1) });
   const curZ = Number(activeZoneByDev[devId] ?? 1);
   box.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el)=>el.classList.add('zone-active'));
   renderSvgSegmentOverlays(box, r, devId, rtype, curZ);
@@ -567,8 +964,29 @@ function triggerVisualFeedback(devId, act, zone, source, rawVal) {
   if (idx >= 0) m3dRemIdx = idx;
   renderRemotesGrid(); renderModal3DRemoteDock();
 
-  pulseHits(document.getElementById(`stage_${devId}`), act, zone, cls);
+  if (Number(hbSelectedDevId) === Number(devId)) { pulseHits(document.getElementById('hbSingleStage'), act, zone, cls); const cp=document.getElementById('hbCenterPill'); if(cp){cp.className='src-pill '+(isRf?'rf':'ui');cp.textContent=isRf?'🟢 RF':'🟠 UI';} const cf=document.getElementById('hbCenterFoot'); if(cf)cf.textContent=`${isRf?'RF':'UI'} → Z${zone}: ${act}${rawVal!==undefined?'('+rawVal+')':''}`; }
+  if (hbPeelCtrl && hbPeelCtrl.pulseAction) hbPeelCtrl.pulseAction(act, zone, isRf, rawVal, isHbCustomRem(remotes.find(x=>getDevId(x)===Number(devId))) ? 'custom' : 'physical');
   pulseHits(document.getElementById('m3dDockSvg'), act, zone, cls);
+  const srcRemObj = remotes.find((x) => getDevId(x) === Number(devId));
+  const linkedPairObj = findHbLinkedPair(srcRemObj);
+  if (linkedPairObj && window.MiLightRemoteStudio) {
+    if (srcRemObj === linkedPairObj.physical && MiLightRemoteStudio.resolvePhysicalToCustomAction) {
+      const cId = getDevId(linkedPairObj.custom);
+      const conv = MiLightRemoteStudio.resolvePhysicalToCustomAction(act, rawVal ?? -1, zone, linkedPairObj.custom.touch_zones, linkedPairObj.custom.calibration);
+      const mAct = conv.converted ? conv.action : act;
+      pulseHits(document.getElementById(`stage_${cId}`), mAct, zone, cls);
+      pulseHits(document.getElementById(`hb_pair_stage_${cId}`), mAct, zone, cls);
+      const cp = document.getElementById(`spill_${cId}`); if (cp) { cp.className = 'src-pill '+(isRf?'rf':'ui'); cp.textContent = isRf?'🟢 RF':'🟠 UI'; }
+      const cf = document.getElementById(`foot_${cId}`); if (cf) cf.textContent = `${isRf?'RF':'UI'} (Linked ${hex}) → Z${zone}: ${mAct}`;
+    } else if (srcRemObj === linkedPairObj.custom && MiLightRemoteStudio.resolveCustomToPhysicalAction) {
+      const pId = getDevId(linkedPairObj.physical);
+      const rev = MiLightRemoteStudio.resolveCustomToPhysicalAction(act, rawVal, zone, linkedPairObj.custom.touch_zones, linkedPairObj.physical.calibration);
+      pulseHits(document.getElementById(`stage_${pId}`), rev.action, zone, cls);
+      pulseHits(document.getElementById(`hb_pair_stage_${pId}`), rev.action, zone, cls);
+      const pp = document.getElementById(`spill_${pId}`); if (pp) { pp.className = 'src-pill '+(isRf?'rf':'ui'); pp.textContent = isRf?'🟢 RF':'🟠 UI'; }
+      const pf = document.getElementById(`foot_${pId}`); if (pf) pf.textContent = `${isRf?'RF':'UI'} (Overlay ${hex}) → Z${zone}: ${rev.action}`;
+    }
+  }
 
   const pill = document.getElementById(`spill_${devId}`); if (pill) { pill.className = 'src-pill '+(isRf?'rf':'ui'); pill.textContent = isRf?'🟢 RF':'🟠 UI'; }
   const dpill = document.getElementById('m3dDockPill'); if (dpill) { dpill.className = 'src-pill '+(isRf?'rf':'ui'); dpill.textContent = isRf?'🟢 RF':'🟠 UI'; }
