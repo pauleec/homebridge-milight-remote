@@ -366,6 +366,7 @@ function expandParentHomebridgeModal(wide) {
   try {
     if (window.parent && window.parent !== window && window.parent.document) {
       const pdoc = window.parent.document;
+      pdoc.querySelectorAll('iframe').forEach(f => { f.setAttribute('allowfullscreen', 'true'); f.setAttribute('allow', 'fullscreen'); });
       let st = pdoc.getElementById('milight-hb-wide-style');
       if (!st) { st = pdoc.createElement('style'); st.id = 'milight-hb-wide-style'; pdoc.head.appendChild(st); }
       const pH = Math.max(600, Math.min(960, (window.parent.innerHeight || 860) - 125));

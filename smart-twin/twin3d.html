@@ -75,7 +75,8 @@
   .hud-grp { pointer-events: auto; display: flex; gap: 4px; flex-wrap: wrap; background: var(--glass); backdrop-filter: blur(8px); border: 1px solid var(--bdr-strong); padding: 5px 7px; border-radius: 8px; box-shadow: var(--shadow); }
 
   /* Interactive Docked SVG Remote */
-  #remDock { position: absolute; top: 58px; left: 12px; width: 226px; background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--bdr-strong); border-radius: 11px; padding: 10px; z-index: 12; box-shadow: var(--shadow); transition: border-color .2s, box-shadow .2s; }
+  #remDock { position:absolute; top:50px; left:12px; width:335px; max-height:calc(100% - 92px); overflow-y:auto; z-index:20; background:var(--card); backdrop-filter:blur(10px); border:1px solid var(--bdr); border-radius:14px; padding:11px 12px; box-shadow:0 10px 28px rgba(15,23,42,0.18); transition:width .18s ease; }
+  #remDock.compact { width:230px; }
   #remDock.min #remDockBody { display: none; }
   #remDock.min { width: auto; }
   #remDock.hit-rf { border-color: var(--rf); box-shadow: 0 0 0 3px rgba(22,163,74,.25); }
@@ -84,8 +85,10 @@
   .rd-btn { padding: 3px 7px; font-size: 10px; font-weight: 700; border-radius: 5px; border: 1px solid var(--bdr-strong); background: var(--panel); color: var(--txt); cursor: pointer; }
   .rd-btn.active { background: var(--hb-orange); border-color: var(--hb-orange); color: #fff; }
   #rdTargetHint { font-size: 10.5px; font-weight: 700; color: var(--acc); text-align: center; margin-bottom: 5px; min-height: 15px; }
-  #rdSvg { display: flex; justify-content: center; align-items: center; min-height: 205px; background: var(--stage); border: 1px solid var(--bdr); border-radius: 8px; padding: 8px; overflow: hidden; }
-  #rdSvg svg { max-height: 195px; max-width: 170px; width: auto !important; height: auto !important; display: block; user-select: none; }
+  #rdSvg { display:flex; justify-content:center; align-items:center; min-height:330px; padding:6px 2px; background:var(--stage); border-radius:10px; border:1px solid var(--bdr); }
+  #remDock.compact #rdSvg { min-height:220px; }
+  #rdSvg svg { width:auto !important; height:clamp(330px, 47vh, 490px) !important; max-width:96% !important; filter:drop-shadow(0 8px 18px rgba(0,0,0,0.22)); }
+  #remDock.compact #rdSvg svg { height:235px !important; }
 
   .mbx-hit { cursor: pointer; }
   .mbx-hit.zone-active > circle, .mbx-hit.zone-active > rect, circle.mbx-hit.zone-active, rect.mbx-hit.zone-active { stroke: var(--hb-orange) !important; stroke-width: 2.6px !important; }
@@ -204,7 +207,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
         <span style="font-size:11.5px;font-weight:800">🎛️ Try Remote (RF or Click)</span>
         <span id="rdBadge" style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:99px;background:var(--stage);color:var(--mut);border:1px solid var(--bdr)">READY</span>
-        <button class="btn-chip" style="padding:1px 6px" onclick="document.getElementById('remDock').classList.toggle('min')">_</button>
+        <div style="display:flex;gap:3px"><button class="btn-chip" style="padding:1px 6px;font-size:10.5px" title="Toggle Hero / Compact Remote Size" onclick="const d=document.getElementById('remDock');d.classList.toggle('compact');renderDock()">⇔</button><button class="btn-chip" style="padding:1px 6px" title="Minimize Remote Dock" onclick="document.getElementById('remDock').classList.toggle('min')">_</button></div>
       </div>
       <div id="remDockBody">
         <div class="rd-tabs" id="rdTabs"></div>
@@ -1200,26 +1203,46 @@ function renderDock() {
     hintEl.innerHTML = `<span>→ ${ZONE_TARGET_NAMES[curZ] || ('Zone ' + curZ)}</span> <button type="button" class="rd-btn" style="margin-left:6px;padding:1px 6px;font-size:10px" onclick="openDockStencilStudio()">🎨 Stencil</button>`;
   }
 
+  const isCompactDock = document.getElementById('remDock').classList.contains('compact');
+  const dockH = isCompactDock ? '235px' : 'clamp(330px, 47vh, 490px)';
+  const dockSqH = isCompactDock ? '210px' : 'clamp(290px, 40vh, 410px)';
+
   if (window.MiLightRemoteStudio && (cur.facia || mod.isCustom) && !window.tourShowcaseSegments) {
+    const sendDockVirtual = async (act, val, zNext, customMsg) => {
+      const isHoldToggle = Boolean(customMsg && customMsg.includes('Hold Toggle'));
+      const apiAct = isHoldToggle ? `${act}_hold` : (act === 'kelvin' ? 'color_temp' : act);
+      await fetch('/api/virtual_send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: devId, remote_type: rtype, group_id: zNext, action: apiAct, value: val })
+      });
+    };
+    if (MiLightRemoteStudio.mountPeelableStage && !isCompactDock) {
+      const baseId = mod.baseModel || mod.base || cur.base_model || 'B8';
+      const physMod = MiBoxerCatalog.MODELS.find((m) => m.id === baseId && !m.isCustom) || MiBoxerCatalog.MODELS[0];
+      window._dockStageCtrl = MiLightRemoteStudio.mountPeelableStage(wrap, {
+        overlayModel: mod, physicalModel: physMod, uid: 'full3d_peel',
+        maxHeight: dockH, squareHeight: dockSqH,
+        facia: cur.facia || mod.facia, touchZones: cur.touch_zones || mod.touchZones,
+        activeZone: curZ, linkedBadgeText: `Peel ⇄ ${physMod.id}`,
+        onZoneChange: (zNext) => { zonesByDev[devId] = zNext; renderDock(); },
+        onCustomAction: sendDockVirtual,
+        onPhysicalAction: sendDockVirtual
+      });
+      return;
+    }
     window._dockStageCtrl = MiLightRemoteStudio.mountInteractiveStage(wrap, {
-      model: mod, size: 'thumb', uid: 'full3d', maxHeight: '250px',
+      model: mod, size: 'large', uid: 'full3d', maxHeight: dockH, squareHeight: dockSqH,
       facia: cur.facia || mod.facia,
       touchZones: cur.touch_zones || mod.touchZones,
       activeZone: curZ,
       stepState: window.dockStepState,
       onZoneChange: (zNext) => { zonesByDev[devId] = zNext; renderDock(); },
-      onAction: async (act, val, zNext, customMsg) => {
-        const isHoldToggle = Boolean(customMsg && customMsg.includes('Hold Toggle'));
-        const apiAct = isHoldToggle ? `${act}_hold` : (act === 'kelvin' ? 'color_temp' : act);
-        await fetch('/api/virtual_send', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device_id: devId, remote_type: rtype, group_id: zNext, action: apiAct, value: val })
-        });
-      }
+      onAction: sendDockVirtual
     });
     return;
   }
-  wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'thumb', uid:'full3d', facia: cur.facia || mod.facia, touchZones: cur.touch_zones || mod.touchZones, activeZone: curZ });
+  wrap.innerHTML = MiBoxerCatalog.renderModelSvg(mod, { size:'large', uid:'full3d', facia: cur.facia || mod.facia, touchZones: cur.touch_zones || mod.touchZones, activeZone: curZ });
+  wrap.querySelectorAll('svg').forEach((s) => { s.removeAttribute('width'); s.removeAttribute('height'); });
   wrap.querySelectorAll(`.mbx-hit[data-act="zone"][data-zone="${curZ}"]`).forEach((el) => el.classList.add('zone-active'));
   renderDockSegments(wrap, cur, devId, rtype, curZ);
   wrap.querySelectorAll('.mbx-hit').forEach((el) => {
