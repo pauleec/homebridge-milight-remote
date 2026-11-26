@@ -149,8 +149,7 @@
       .mlrs-peel-under, .mlrs-peel-over { grid-area: 1 / 1; display: flex; align-items: center; justify-content: center; }
       .mlrs-peel-over { position: relative; z-index: 2; transition: clip-path 0.24s cubic-bezier(.22,.9,.3,1), filter 0.2s ease; filter: drop-shadow(-3px 5px 8px rgba(15,23,42,0.28)); }
       .mlrs-peel-stack.scrubbing .mlrs-peel-over, .mlrs-peel-stack.scrubbing .mlrs-peel-flap { transition: none !important; }
-      .mlrs-peel-corner-hit { position: absolute; top: 2px; right: 2px; width: 42px; height: 42px; z-index: 5; cursor: pointer; border-radius: 0 10px 0 28px; background: linear-gradient(225deg, rgba(148,163,184,0.38) 0%, rgba(255,255,255,0.88) 48%, rgba(15,23,42,0.16) 52%, transparent 56%); box-shadow: -2px 2px 5px rgba(15,23,42,0.18); title: "Click to peel back stencil"; }
-      .mlrs-peel-corner-hit:hover { transform: scale(1.08); }
+      .mlrs-peel-corner-hit { position: absolute; top: 2px; right: 2px; width: 42px; height: 42px; z-index: 5; cursor: pointer; border-radius: 0 10px 0 28px; background: linear-gradient(225deg, rgba(148,163,184,0.38) 0%, rgba(255,255,255,0.88) 48%, rgba(15,23,42,0.16) 52%, transparent 56%); box-shadow: -2px 2px 5px rgba(15,23,42,0.18); }
       .mlrs-peel-flap { position: absolute; inset: 6px; z-index: 4; pointer-events: none; background: linear-gradient(225deg, rgba(241,245,249,0.97) 0%, rgba(203,213,225,0.94) 55%, rgba(148,163,184,0.88) 100%); filter: drop-shadow(-6px 7px 10px rgba(15,23,42,0.34)); transition: clip-path 0.24s cubic-bezier(.22,.9,.3,1), opacity 0.2s ease; }
 
 
@@ -163,14 +162,13 @@
         margin: 0 0 10px 0 !important; font-size: 12.5px !important; line-height: 1.4 !important; box-sizing: border-box !important;
       }
       .mlrs-tour-left { display: flex !important; align-items: center !important; gap: 11px !important; flex: 1 !important; min-width: 240px !important; }
-      .mlrs-tour-icon { width: 34px !important; height: 34px !important; border-radius: 9px !important; background: #0284c7 !important; color: #fff !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 16px !important; flex-shrink: 0 !important; box-shadow: 0 2px 6px rgba(2,132,199,0.3) !important; }
+      .mlrs-tour-icon { width: 34px !important; height: 34px !important; border-radius: 9px !important; background: #0284c7 !important; color: #fff !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 16px !important; flex-shrink: 0 !important; }
       .mlrs-tour-step-badge { display: inline-flex !important; align-items: center !important; padding: 2px 8px !important; border-radius: 999px !important; background: rgba(2,132,199,0.16) !important; color: #0284c7 !important; font-weight: 800 !important; font-size: 10.5px !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; margin-right: 7px !important; }
       .mlrs-tour-dots { display: inline-flex !important; gap: 4px !important; align-items: center !important; margin-left: 8px !important; vertical-align: middle !important; }
       .mlrs-tour-dot { width: 6px !important; height: 6px !important; border-radius: 999px !important; background: rgba(100,116,139,0.35) !important; }
       .mlrs-tour-dot.on { width: 16px !important; background: #0284c7 !important; }
       .mlrs-tour-nav { display: flex !important; align-items: center !important; gap: 6px !important; flex-wrap: wrap !important; }
-      button.mlrs-tour-btn { padding: 5px 11px !important; border-radius: 7px !important; border: 1px solid rgba(100,116,139,0.38) !important; background: var(--card-background-color, #ffffff) !important; color: var(--primary-text-color, #0f172a) !important; font-weight: 700 !important; font-size: 11.5px !important; cursor: pointer !important; line-height: 1.2 !important; }
-      button.mlrs-tour-btn:hover { border-color: #0284c7 !important; }
+      button.mlrs-tour-btn { padding: 5px 11px !important; border-radius: 7px !important; border: 1px solid rgba(100,116,139,0.38) !important; background: #ffffff !important; color: #0f172a !important; font-weight: 700 !important; font-size: 11.5px !important; cursor: pointer !important; }
       button.mlrs-tour-btn.demo { background: #0284c7 !important; border-color: #0284c7 !important; color: #ffffff !important; }
       button.mlrs-tour-reopen { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 5px 12px !important; border-radius: 999px !important; border: 1px solid rgba(2,132,199,0.45) !important; background: rgba(2,132,199,0.10) !important; color: #0284c7 !important; font-weight: 700 !important; font-size: 11.5px !important; cursor: pointer !important; }
 
@@ -211,14 +209,12 @@
     const vbRatio = (vb[2] > 0 && vb[3] > 0) ? (vb[2] / vb[3]) : 0.71;
     svgEl.removeAttribute('width');
     svgEl.removeAttribute('height');
-    const targetH = opts.maxHeight || 'clamp(370px, 58vh, 640px)';
-    svgEl.style.height = targetH;
+    svgEl.style.height = opts.maxHeight || 'clamp(370px, 58vh, 640px)';
     svgEl.style.maxHeight = '100%';
     svgEl.style.width = 'auto';
     svgEl.style.maxWidth = '100%';
     svgEl.style.aspectRatio = `${vb[2] || 220} / ${vb[3] || 310}`;
     if (vbRatio > 0.88) {
-      // Square / wide 86x86 or 142x86 wall panels: scale generously without towering over handhelds
       svgEl.style.height = opts.squareHeight || 'clamp(330px, 48vh, 520px)';
     }
     svgEl.style.display = 'block';
@@ -477,6 +473,16 @@
         const bb = el.getBBox ? el.getBBox() : null;
         const px = (sp && !Number.isNaN(sp.x) && sp.x !== 0) ? sp.x : (bb ? bb.x + bb.width / 2 : 0);
         const py = (sp && !Number.isNaN(sp.y) && sp.y !== 0) ? sp.y : (bb ? bb.y + bb.height / 2 : 0);
+        if (padCfg.segmentMode === 'slider') {
+          const frac = Math.max(0, Math.min(1, (px - (bb ? bb.x : 0)) / Math.max(1, bb ? bb.width : 1)));
+          const sMin = Number(padCfg.sliderMin ?? 0);
+          const sMax = Number(padCfg.sliderMax ?? 100);
+          const mappedVal = Math.round(sMin + frac * (sMax - sMin));
+          const badge = `${padCfg.label || pKey}: ${mappedVal}% (${sMin}%–${sMax}%)`;
+          showFingerPuck(px, py, `${mappedVal}%`, false, 'ui_btn');
+          if (typeof opts.onAction === 'function') opts.onAction(baseAct, mappedVal, zNext, badge);
+          return;
+        }
         if (mf) {
           const maxS = Math.max(2, Number(mf.steps || 4));
           const st = stepCounters[pKey] || { step: 0, on: true };
@@ -560,9 +566,64 @@
   // ============================================================================
   // 2. 1:1 PRINT / CUT STENCIL SHEET BUILDER
   // ============================================================================
+  function buildPodOrderPayload(remoteName, hexId, model, facia, touchZones, activeZone) {
+    const Cat = root.MiBoxerCatalog;
+    const dims = Cat.getPhysicalDims(model);
+    const f = facia || {};
+    const preset = (Cat.FACIA_THEMES && Cat.FACIA_THEMES[f.theme]) || {};
+    const pads = f.pads || {};
+    const lum = Object.assign({ enabled: false, border: false, header: false, slots: false }, f.luminous || {});
+    const luminousSlots = Object.entries(pads)
+      .filter(([, cfg]) => Boolean(cfg && cfg.luminous))
+      .map(([slotKey]) => slotKey);
+    const sliderSegments = Object.entries(pads)
+      .filter(([, cfg]) => Boolean(cfg && cfg.segmentMode === 'slider'))
+      .map(([slotKey, cfg]) => ({
+        slot: slotKey,
+        label: cfg.label || slotKey,
+        min_pct: Number(cfg.sliderMin ?? 0),
+        max_pct: Number(cfg.sliderMax ?? 100)
+      }));
+
+    return {
+      schema: 'milight_remote_studio.pod_order.v1',
+      created_at: new Date().toISOString(),
+      remote_name: remoteName || model.name || model.id,
+      device_id: hexId || '',
+      hardware_model: model.id,
+      fit_mode: Cat.getStencilFitMode ? Cat.getStencilFitMode(model) : 'single_sheet',
+      dimensions_mm: {
+        width_mm: dims.width_mm,
+        height_mm: dims.height_mm,
+        corner_radius_mm: dims.corner_radius_mm || 0
+      },
+      appearance: {
+        theme: f.theme || 'pure_white',
+        material: f.material || 'matte_vinyl_peelable',
+        monochrome: Boolean(f.monochrome),
+        background_color: f.bgColor || (f.colors && f.colors.bg) || preset.bg || '#ffffff',
+        boundary_line_color: f.boundaryColor || (f.colors && f.colors.padStroke) || preset.padStroke || '#0f172a',
+        panel_title: f.panelTitle || '',
+        show_led_pinhole: f.showLedPinhole !== false
+      },
+      luminous_glow: {
+        enabled: Boolean(lum.enabled || luminousSlots.length > 0),
+        pigment: 'strontium_aluminate',
+        outer_boundary: Boolean(lum.enabled && lum.border),
+        header_title: Boolean(lum.enabled && lum.header),
+        all_slots: Boolean(lum.enabled && lum.slots),
+        individual_slots: luminousSlots
+      },
+      slider_segments: sliderSegments,
+      facia: f,
+      touch_zones: touchZones || null
+    };
+  }
+
   function buildOneToOnePrintSvg(model, facia, touchZones, activeZone) {
     const Cat = root.MiBoxerCatalog;
     const dims = Cat.getPhysicalDims(model);
+    const podMeta = buildPodOrderPayload(model.name || model.id, '', model, facia, touchZones, activeZone);
     const rendered = Cat.renderCapacitiveStencilSvg(model, {
       size: 'large', uid: 'print_1to1',
       facia: Object.assign({}, facia || {}, { enabled: true }),
@@ -571,7 +632,8 @@
     const vbMatch = rendered.match(/viewBox="([^"]+)"/);
     const vb = vbMatch ? vbMatch[1] : '0 0 210 210';
     const inner = rendered.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${dims.width_mm}mm" height="${dims.height_mm}mm" viewBox="${vb}" data-model="${model.id}">\n${inner}\n</svg>`;
+    const safeJson = JSON.stringify(podMeta).replace(/]]>/g, ']]&gt;');
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${dims.width_mm}mm" height="${dims.height_mm}mm" viewBox="${vb}" data-model="${model.id}" data-bg-color="${podMeta.appearance.background_color}" data-boundary-color="${podMeta.appearance.boundary_line_color}" data-luminous="${podMeta.luminous_glow.enabled ? '1' : '0'}">\n<metadata><pod_order><![CDATA[${safeJson}]]></pod_order></metadata>\n${inner}\n</svg>`;
   }
 
   function openPrintSheetWindow(remoteName, hexId, model, facia, touchZones, activeZone) {
@@ -707,8 +769,8 @@
                 <button type="button" class="mlrs-btn ${mode === 'edit' ? 'active-tab' : ''}" id="mlrsModeEdit">1. Design Stencil</button>
                 <button type="button" class="mlrs-btn ${mode === 'test' ? 'active-tab' : ''}" id="mlrsModeTest">2. Interactive Test (Tap / Hold)</button>
               </div>
-              ${opts.onOpenGestures ? `<button type="button" class="mlrs-btn" id="mlrsOpenGestBtn" title="Configure Multi-Tap &amp; Segmented Touch Zones">🎛️ Gestures &amp; Segments</button>` : ''}
-              <button type="button" class="mlrs-btn ${isFullscreen ? 'active-tab' : ''}" id="mlrsFullBtn" title="Toggle Full Monitor Screen">${isFullscreen ? '❐ Exit Fullscreen' : '⤢ Fullscreen'}</button>
+              ${opts.onOpenGestures ? `<button type="button" class="mlrs-btn" id="mlrsOpenGestBtn">🎛️ Gestures &amp; Segments</button>` : ''}
+              <button type="button" class="mlrs-btn ${isFullscreen ? 'active-tab' : ''}" id="mlrsFullBtn">${isFullscreen ? '❐ Exit Fullscreen' : '⤢ Fullscreen'}</button>
               <button type="button" class="mlrs-btn" id="mlrsCloseBtn">✕ Close</button>
             </div>
           </div>
@@ -774,9 +836,29 @@
                   <option value="minimal" ${draft.defaultPadStyle === 'minimal' ? 'selected' : ''}>Frameless Icon + Label</option>
                 </select>
               </div>
+              <div class="mlrs-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div>
+                  <label>Background Color</label>
+                  <input type="color" class="mlrs-input" id="mlrsBgColor" style="height:32px;padding:2px" value="${draft.bgColor || '#111827'}"/>
+                </div>
+                <div>
+                  <label>Boundary Line Color</label>
+                  <input type="color" class="mlrs-input" id="mlrsBoundaryColor" style="height:32px;padding:2px" value="${draft.boundaryColor || '#94a3b8'}"/>
+                </div>
+              </div>
               <div class="mlrs-field">
                 <label>Panel Header Title</label>
                 <input type="text" class="mlrs-input" id="mlrsPanelTitle" placeholder="e.g. MASTER SUITE" value="${draft.panelTitle || ''}"/>
+              </div>
+              <div class="mlrs-box-sub" style="margin-bottom:8px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:5px">
+                  <input type="checkbox" id="mlrsLumMaster" ${(draft.luminous && draft.luminous.enabled) ? 'checked' : ''}/> Luminous / Glow-in-the-Dark (POD)
+                </label>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px">
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumBorder" ${(draft.luminous && draft.luminous.border) ? 'checked' : ''}/> Outer Boundary</label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumHeader" ${(draft.luminous && draft.luminous.header) ? 'checked' : ''}/> Header / Title</label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumSlots" ${(draft.luminous && draft.luminous.slots) ? 'checked' : ''}/> All Pads / Ring</label>
+                </div>
               </div>
               <div class="mlrs-field" style="display:flex;flex-direction:column;gap:5px">
                 <label style="display:flex;align-items:center;gap:6px;font-weight:500;cursor:pointer"><input type="checkbox" id="mlrsMonoChk" ${draft.monochrome ? 'checked' : ''}/> Pure Monochrome / B&amp;W Ink</label>
@@ -801,6 +883,31 @@
             <div class="mlrs-col">
               <div class="mlrs-sec-title" style="margin-bottom:6px">3. Selected Slot: <code style="padding:2px 6px;border-radius:4px;background:var(--mlrs-muted);border:1px solid var(--mlrs-border)">${selectedPadKey}</code></div>
 
+              ${/^(hue|bri|cct|sat)_seg_\d+$/.test(selectedPadKey) ? `
+              <div class="mlrs-field">
+                <label>Segment Behavior (Button vs. Variable Slider)</label>
+                <select class="mlrs-select" id="mlrsSegMode">
+                  <option value="button" ${(curPad.segmentMode || 'button') === 'button' ? 'selected' : ''}>Button (Tap / Step / Hold)</option>
+                  <option value="slider" ${curPad.segmentMode === 'slider' ? 'selected' : ''}>Variable Slider (Custom X% to Y% Range)</option>
+                </select>
+                ${curPad.segmentMode === 'slider' ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+                  <div>
+                    <label style="font-size:11px">Start End (X %)</label>
+                    <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMin" value="${curPad.sliderMin ?? 0}"/>
+                  </div>
+                  <div>
+                    <label style="font-size:11px">Far / Max End (Y %)</label>
+                    <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMax" value="${curPad.sliderMax ?? 100}"/>
+                  </div>
+                </div>` : ''}
+              </div>` : ''}
+
+              <div class="mlrs-field">
+                <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer">
+                  <input type="checkbox" id="mlrsPadLuminous" ${curPad.luminous ? 'checked' : ''}/> Luminous / Glow on This Slot (POD)
+                </label>
+              </div>
               <div class="mlrs-field">
                 <label>Slot Visibility / Style</label>
                 <select class="mlrs-select" id="mlrsPadStyle">
@@ -863,6 +970,7 @@
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button type="button" class="mlrs-btn" id="mlrsPrintBtn">Print 1:1 Stencil Sheet</button>
               <button type="button" class="mlrs-btn" id="mlrsDlSvgBtn">Download 1:1 SVG</button>
+              <button type="button" class="mlrs-btn" id="mlrsDlPodBtn">Download POD Spec JSON</button>
               ${isEditingExistingCustom ? `<button type="button" class="mlrs-btn" id="mlrsSaveCopyBtn">Save as New Copy</button>` : ''}
               <button type="button" class="mlrs-btn" id="mlrsCancelBtn">Cancel</button>
               <button type="button" class="mlrs-btn primary" id="mlrsDeployBtn">${isEditingExistingCustom ? 'Update Custom Remote' : '+ Create Custom Remote'}</button>
@@ -938,7 +1046,7 @@
             { title: 'Split Rings & Sliders Into Discrete Buttons', body: 'Use Left Panel Section 1 to turn continuous Color Rings or Touch Bars into 2 to 8 labeled macro buttons.', actionLabel: 'Select Ring Slot #1', onAction: () => { selectedPadKey = 'hue_seg_1'; mode = 'edit'; renderModal(); } },
             { title: 'Architectural Themes & Blank Pad Masking', body: 'Switch between Pure White, Warm Travertine, or Matte Black vinyl palettes and set unused buttons to Blank Masked.', actionLabel: 'Preview Warm Stone', onAction: () => { draft.theme = 'warm_stone'; draft.colors = null; renderModal(); } },
             { title: 'Single-Button Step-Cycling + Hold Toggle', body: 'Enable Multi-Function on any pad so short taps cycle speeds/positions (1 to 6) while a long hold toggles OFF — test it live in Mode 2!', actionLabel: 'Switch to Interactive Test', onAction: () => { mode = 'test'; renderModal(); } },
-            { title: 'Calibrated 1:1 Millimeter Print & SVG Export', body: 'Print Sheet adds a 10 mm verification square, and Download 1:1 SVG uses a real HTTP attachment stream compatible with download managers.', actionLabel: 'Download 1:1 SVG', onAction: () => backdrop.querySelector('#mlrsDlSvgBtn')?.click() }
+            { title: 'Calibrated 1:1 Millimeter Print & SVG Export', body: 'Print Sheet adds a 10 mm verification square, and Download 1:1 SVG uses an HTTP attachment stream compatible with download extensions.', actionLabel: 'Download 1:1 SVG', onAction: () => backdrop.querySelector('#mlrsDlSvgBtn')?.click() }
           ]
         });
       }
@@ -989,12 +1097,46 @@
       });
       backdrop.querySelector('#mlrsDefPadStyle').onchange = (e) => { draft.defaultPadStyle = e.target.value; renderModal(); };
       backdrop.querySelector('#mlrsPanelTitle').oninput = (e) => { draft.panelTitle = e.target.value; refreshStageOnly(); };
+      const bgColEl = backdrop.querySelector('#mlrsBgColor');
+      if (bgColEl) bgColEl.oninput = (e) => { draft.bgColor = e.target.value; refreshStageOnly(); };
+      const bdrColEl = backdrop.querySelector('#mlrsBoundaryColor');
+      if (bdrColEl) bdrColEl.oninput = (e) => { draft.boundaryColor = e.target.value; refreshStageOnly(); };
+      const ensureLum = () => { if (!draft.luminous) draft.luminous = { enabled: false, border: true, header: false, slots: false }; return draft.luminous; };
+      const lumMasterEl = backdrop.querySelector('#mlrsLumMaster');
+      if (lumMasterEl) lumMasterEl.onchange = (e) => { const l = ensureLum(); l.enabled = e.target.checked; if (e.target.checked && !l.border && !l.header && !l.slots) l.border = true; refreshStageOnly(); };
+      const lumBorderEl = backdrop.querySelector('#mlrsLumBorder');
+      if (lumBorderEl) lumBorderEl.onchange = (e) => { const l = ensureLum(); l.border = e.target.checked; if (e.target.checked) l.enabled = true; refreshStageOnly(); };
+      const lumHeaderEl = backdrop.querySelector('#mlrsLumHeader');
+      if (lumHeaderEl) lumHeaderEl.onchange = (e) => { const l = ensureLum(); l.header = e.target.checked; if (e.target.checked) l.enabled = true; refreshStageOnly(); };
+      const lumSlotsEl = backdrop.querySelector('#mlrsLumSlots');
+      if (lumSlotsEl) lumSlotsEl.onchange = (e) => { const l = ensureLum(); l.slots = e.target.checked; if (e.target.checked) l.enabled = true; refreshStageOnly(); };
+      const padLumEl = backdrop.querySelector('#mlrsPadLuminous');
+      if (padLumEl) padLumEl.onchange = (e) => { const p = ensurePad(); p.luminous = e.target.checked; refreshStageOnly(); };
       backdrop.querySelector('#mlrsMonoChk').onchange = (e) => { draft.monochrome = e.target.checked; renderModal(); };
       backdrop.querySelector('#mlrsLedHole').onchange = (e) => { draft.showLedPinhole = e.target.checked; refreshStageOnly(); };
 
       // Right Column Inspector
       const ensurePad = () => { if (!draft.pads[selectedPadKey]) draft.pads[selectedPadKey] = {}; return draft.pads[selectedPadKey]; };
       backdrop.querySelector('#mlrsPadStyle').onchange = (e) => { const p = ensurePad(); if (e.target.value) p.style = e.target.value; else delete p.style; renderModal(); };
+      const segModeEl = backdrop.querySelector('#mlrsSegMode');
+      if (segModeEl) segModeEl.onchange = (e) => {
+        const p = ensurePad();
+        p.segmentMode = e.target.value;
+        if (p.segmentMode === 'slider' && p.multifunc) p.multifunc.enabled = false;
+        renderModal();
+      };
+      const segMinEl = backdrop.querySelector('#mlrsSegMin');
+      if (segMinEl) segMinEl.oninput = (e) => {
+        const p = ensurePad();
+        p.sliderMin = Math.max(0, Math.min(100, Number(e.target.value || 0)));
+        refreshStageOnly();
+      };
+      const segMaxEl = backdrop.querySelector('#mlrsSegMax');
+      if (segMaxEl) segMaxEl.oninput = (e) => {
+        const p = ensurePad();
+        p.sliderMax = Math.max(0, Math.min(100, Number(e.target.value || 100)));
+        refreshStageOnly();
+      };
       backdrop.querySelector('#mlrsPadLabel').oninput = (e) => { const p = ensurePad(); p.label = e.target.value; syncLabelToTouchZone(selectedPadKey, e.target.value); refreshStageOnly(); };
       backdrop.querySelector('#mlrsPadSub').oninput = (e) => { const p = ensurePad(); p.sublabel = e.target.value; refreshStageOnly(); };
       backdrop.querySelector('#mlrsMfChk').onchange = (e) => {
@@ -1033,6 +1175,13 @@
         const svgStr = buildOneToOnePrintSvg(model, draft, tz, activeZone);
         const fName = `${model.id.toLowerCase()}_${hexId.toLowerCase()}_stencil_1to1.svg`;
         downloadTextFile(fName, svgStr, 'image/svg+xml', { hubBase });
+      };
+      const podBtn = backdrop.querySelector('#mlrsDlPodBtn');
+      if (podBtn) podBtn.onclick = (ev) => {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        const podObj = buildPodOrderPayload(remoteName, hexId, model, draft, tz, activeZone);
+        const fName = `${model.id.toLowerCase()}_${hexId.toLowerCase()}_pod_order.json`;
+        downloadTextFile(fName, JSON.stringify(podObj, null, 2), 'application/json', { hubBase });
       };
 
       const nameInp = backdrop.querySelector('#mlrsCustomModelName');
@@ -1219,39 +1368,25 @@
 
   function computePeelClipPolygons(peelPct) {
     const p = Math.max(0, Math.min(100, Number(peelPct) || 0));
-    if (p <= 0.5) {
-      return { overClip: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', flapClip: 'polygon(100% 0%, 100% 0%, 100% 0%)', flapOpacity: 0 };
-    }
-    if (p >= 99.5) {
-      return { overClip: 'polygon(0% 100%, 0% 100%, 0% 100%)', flapClip: 'polygon(0% 0%, 0% 0%, 0% 0%)', flapOpacity: 0 };
-    }
-    // Diagonal peel from top-right (100%, 0%) toward bottom-left (0%, 100%)
-    const d = (p / 100) * 200; // 0..200
-    let pts = [];
+    if (p <= 0.5) return { overClip: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', flapClip: 'polygon(100% 0%, 100% 0%, 100% 0%)', flapOpacity: 0 };
+    if (p >= 99.5) return { overClip: 'polygon(0% 100%, 0% 100%, 0% 100%)', flapClip: 'polygon(0% 0%, 0% 0%, 0% 0%)', flapOpacity: 0 };
+    const d = (p / 100) * 200;
     if (d <= 100) {
-      const xCut = 100 - d;
-      const yCut = d;
-      pts = [`0% 0%`, `${xCut.toFixed(1)}% 0%`, `100% ${yCut.toFixed(1)}%`, `100% 100%`, `0% 100%`];
-      const fx = Math.max(0, xCut - d * 0.28);
-      const fy = Math.min(100, yCut + d * 0.28);
+      const xCut = 100 - d, yCut = d;
+      const fx = Math.max(0, xCut - d * 0.28), fy = Math.min(100, yCut + d * 0.28);
       return {
-        overClip: `polygon(${pts.join(', ')})`,
+        overClip: `polygon(0% 0%, ${xCut.toFixed(1)}% 0%, 100% ${yCut.toFixed(1)}%, 100% 100%, 0% 100%)`,
         flapClip: `polygon(${xCut.toFixed(1)}% 0%, 100% ${yCut.toFixed(1)}%, ${fx.toFixed(1)}% ${fy.toFixed(1)}%)`,
         flapOpacity: 0.92
       };
-    } else {
-      const rem = 200 - d; // 100..0
-      const xBot = rem;
-      const yLeft = 100 - rem;
-      pts = [`0% ${yLeft.toFixed(1)}%`, `${xBot.toFixed(1)}% 100%`, `0% 100%`];
-      const fx = Math.max(0, xBot * 0.55);
-      const fy = Math.min(100, yLeft + (100 - yLeft) * 0.45);
-      return {
-        overClip: `polygon(${pts.join(', ')})`,
-        flapClip: `polygon(0% ${yLeft.toFixed(1)}%, ${xBot.toFixed(1)}% 100%, ${fx.toFixed(1)}% ${fy.toFixed(1)}%)`,
-        flapOpacity: Math.max(0.18, rem / 110)
-      };
     }
+    const rem = 200 - d, xBot = rem, yLeft = 100 - rem;
+    const fx = Math.max(0, xBot * 0.55), fy = Math.min(100, yLeft + (100 - yLeft) * 0.45);
+    return {
+      overClip: `polygon(0% ${yLeft.toFixed(1)}%, ${xBot.toFixed(1)}% 100%, 0% 100%)`,
+      flapClip: `polygon(0% ${yLeft.toFixed(1)}%, ${xBot.toFixed(1)}% 100%, ${fx.toFixed(1)}% ${fy.toFixed(1)}%)`,
+      flapOpacity: Math.max(0.18, rem / 110)
+    };
   }
 
   function mountPeelableStage(containerEl, opts) {
@@ -1275,15 +1410,15 @@
       <div class="mlrs-peel-wrap">
         <div class="mlrs-peel-bar">
           <button type="button" class="mlrs-peel-btn" data-role="peel-toggle">🩹 Peel Back Stencil</button>
-          <input type="range" min="0" max="100" value="${peelPct}" data-role="peel-range" style="width:115px;cursor:pointer;accent-color:#0284c7" title="Drag to peel custom vinyl overlay and inspect factory hardware underneath"/>
-          <span data-role="peel-lbl" style="font-weight:700;min-width:118px;text-align:left">Stencil Applied (0%)</span>
+          <input type="range" min="0" max="100" value="${peelPct}" data-role="peel-range" style="width:105px;cursor:pointer;accent-color:#0284c7"/>
+          <span data-role="peel-lbl" style="font-weight:700;min-width:110px;text-align:left">Stencil On (0%)</span>
           <span style="color:#0284c7;font-weight:700">${linkedTitle}</span>
         </div>
         <div class="mlrs-peel-stack" data-role="peel-stack">
           <div class="mlrs-peel-under" data-role="under-stage"></div>
           <div class="mlrs-peel-over" data-role="over-stage"></div>
           <div class="mlrs-peel-flap" data-role="peel-flap"></div>
-          <div class="mlrs-peel-corner-hit" data-role="peel-corner" title="Click corner to peel back custom stencil & reveal factory remote"></div>
+          <div class="mlrs-peel-corner-hit" data-role="peel-corner" title="Click corner to peel back custom stencil"></div>
         </div>
       </div>
     `;
@@ -1297,87 +1432,47 @@
     const rangeEl = containerEl.querySelector('[data-role="peel-range"]');
     const lblEl   = containerEl.querySelector('[data-role="peel-lbl"]');
 
-    // Under-layer = bare factory hardware (NO facia, NO segmented touchZones stuck on surface!)
     const underCtrl = mountInteractiveStage(underEl, {
-      model: physicalModel,
-      uid: `${opts.uid || 'peel'}_phys`,
-      maxHeight: maxH,
-      facia: null,
-      touchZones: null,
-      calibration: opts.physicalCalibration || opts.calibration,
-      activeZone: opts.activeZone ?? 1,
+      model: physicalModel, uid: `${opts.uid || 'peel'}_phys`, maxHeight: maxH,
+      facia: null, touchZones: null,
+      calibration: opts.physicalCalibration || opts.calibration, activeZone: opts.activeZone ?? 1,
       onZoneChange: (z) => { if (opts.onZoneChange) opts.onZoneChange(z); },
       onScrubPreview: opts.onScrubPreview,
-      onAction: (act, val, z, lbl) => {
-        if (opts.onPhysicalAction) opts.onPhysicalAction(act, val, z, lbl);
-        else if (opts.onAction) opts.onAction(act, val, z, lbl, 'physical');
-      }
+      onAction: (act, val, z, lbl) => { if (opts.onPhysicalAction) opts.onPhysicalAction(act, val, z, lbl); else if (opts.onAction) opts.onAction(act, val, z, lbl); }
     });
 
-    // Over-layer = custom vinyl stencil overlay + segmented pads
     const overCtrl = mountInteractiveStage(overEl, {
-      model: overlayModel,
-      uid: `${opts.uid || 'peel'}_cust`,
-      maxHeight: maxH,
+      model: overlayModel, uid: `${opts.uid || 'peel'}_cust`, maxHeight: maxH,
       facia: opts.facia || (overlayModel && overlayModel.facia),
       touchZones: opts.touchZones || (overlayModel && overlayModel.touchZones),
-      calibration: opts.calibration,
-      activeZone: opts.activeZone ?? 1,
+      calibration: opts.calibration, activeZone: opts.activeZone ?? 1,
       onZoneChange: (z) => { if (opts.onZoneChange) opts.onZoneChange(z); },
       onScrubPreview: opts.onScrubPreview,
-      onAction: (act, val, z, lbl) => {
-        if (opts.onCustomAction) opts.onCustomAction(act, val, z, lbl);
-        else if (opts.onAction) opts.onAction(act, val, z, lbl, 'custom');
-      }
+      onAction: (act, val, z, lbl) => { if (opts.onCustomAction) opts.onCustomAction(act, val, z, lbl); else if (opts.onAction) opts.onAction(act, val, z, lbl); }
     });
 
     function applyPeel(nextPct, isScrub) {
       peelPct = Math.max(0, Math.min(100, Number(nextPct) || 0));
       if (stackEl) stackEl.classList.toggle('scrubbing', Boolean(isScrub));
       const clips = computePeelClipPolygons(peelPct);
-      if (overEl) {
-        overEl.style.clipPath = clips.overClip;
-        overEl.style.webkitClipPath = clips.overClip;
-        overEl.style.pointerEvents = peelPct >= 85 ? 'none' : 'auto';
-      }
-      if (flapEl) {
-        flapEl.style.clipPath = clips.flapClip;
-        flapEl.style.webkitClipPath = clips.flapClip;
-        flapEl.style.opacity = String(clips.flapOpacity);
-      }
-      if (cornerEl) cornerEl.style.opacity = peelPct >= 95 ? '0.25' : '1';
+      if (overEl) { overEl.style.clipPath = clips.overClip; overEl.style.pointerEvents = peelPct >= 85 ? 'none' : 'auto'; }
+      if (flapEl) { flapEl.style.clipPath = clips.flapClip; flapEl.style.opacity = String(clips.flapOpacity); }
       if (rangeEl && Number(rangeEl.value) !== Math.round(peelPct)) rangeEl.value = String(Math.round(peelPct));
       if (btnEl) {
         btnEl.classList.toggle('peeled', peelPct >= 50);
         btnEl.textContent = peelPct >= 85 ? '🩹 Re-Apply Stencil' : (peelPct > 10 ? '🩹 Peel Fully (100%)' : '🩹 Peel Back Stencil');
       }
-      if (lblEl) {
-        lblEl.textContent = peelPct === 0
-          ? 'Stencil Applied (0%)'
-          : (peelPct >= 98 ? `Bare ${physicalModel.id} Exposed` : `Peeling (${Math.round(peelPct)}% X-Ray)`);
-      }
-      if (opts.onPeelChange) opts.onPeelChange(peelPct);
+      if (lblEl) lblEl.textContent = peelPct === 0 ? 'Stencil On (0%)' : (peelPct >= 98 ? `Bare ${physicalModel.id}` : `Peeled ${Math.round(peelPct)}%`);
     }
-
-    const cyclePeel = () => {
-      if (peelPct < 40) applyPeel(52, false);
-      else if (peelPct < 92) applyPeel(100, false);
-      else applyPeel(0, false);
-    };
+    const cyclePeel = () => applyPeel(peelPct < 40 ? 52 : (peelPct < 92 ? 100 : 0), false);
     if (btnEl) btnEl.onclick = cyclePeel;
     if (cornerEl) cornerEl.onclick = (e) => { e.stopPropagation(); cyclePeel(); };
-    if (rangeEl) {
-      rangeEl.oninput = (e) => applyPeel(Number(e.target.value), true);
-      rangeEl.onchange = (e) => applyPeel(Number(e.target.value), false);
-    }
-
+    if (rangeEl) { rangeEl.oninput = (e) => applyPeel(e.target.value, true); rangeEl.onchange = (e) => applyPeel(e.target.value, false); }
     applyPeel(peelPct, false);
 
     return {
-      underCtrl,
-      overCtrl,
+      underCtrl, overCtrl,
       setPeel: (p) => applyPeel(p, false),
-      getPeel: () => peelPct,
       pulseAction: (action, zone, isRf, val, sourceLayer) => {
         if (sourceLayer === 'physical') {
           if (underCtrl && underCtrl.pulseAction) underCtrl.pulseAction(action, zone, isRf, val);
@@ -1423,21 +1518,6 @@
     const safeName = String(filename || 'stencil_1to1.svg').replace(/[^a-zA-Z0-9._-]/g, '_');
     const mime = mimeType || 'image/svg+xml';
     const text = String(content || '');
-
-    // 1. If a server-side Content-Disposition attachment stager is provided (e.g. Home Assistant token route), use it first!
-    if (opts && typeof opts.stageServerUrl === 'function') {
-      try {
-        const dlUrl = await opts.stageServerUrl(safeName, text, mime);
-        if (dlUrl) {
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = dlUrl;
-          document.body.appendChild(iframe);
-          setTimeout(() => iframe.remove(), 60000);
-          return true;
-        }
-      } catch (_) {}
-    }
     if (root.__MLRS_STAGE_DOWNLOAD) {
       try {
         const dlUrl = await root.__MLRS_STAGE_DOWNLOAD(safeName, text, mime);
@@ -1451,17 +1531,12 @@
         }
       } catch (_) {}
     }
-
-    // 1b. Direct HTTP POST attachment bounce (ESP32 Hub / Smart-Twin / Homebridge) — 100% immune to Chrono blob: hangs!
     const postEndpoint = (opts && opts.downloadEndpoint)
-      || (opts && opts.hubBase ? `${String(opts.hubBase).replace(/\/+$/, '')}/api/remotes/download` : '')
-      || ((typeof location !== 'undefined' && (location.pathname === '/' || location.port === '8588')) ? '/api/remotes/download' : '');
-    if (postEndpoint) {
+      || (opts && opts.hubBase ? `${String(opts.hubBase).replace(/\/+$/, '')}/api/remotes/download` : '/api/remotes/download');
+    if (postEndpoint && !root.__MLRS_STAGE_DOWNLOAD) {
       submitPostDownloadForm(postEndpoint, safeName, text);
       return true;
     }
-
-    // 2. Native OS Save File Picker (Chromium secure contexts — never hijacked by download extensions)
     if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
       try {
         const ext = safeName.endsWith('.json') ? '.json' : '.svg';
@@ -1477,13 +1552,10 @@
         if (err && err.name === 'AbortError') return false;
       }
     }
-
-    // 3. Inline Base64 Data-URI download (contains full payload inline so external download extensions can read it, unlike blob: URLs!)
     try {
       const b64 = btoa(unescape(encodeURIComponent(text)));
-      const dataUri = `data:application/octet-stream;base64,${b64}`;
       const a = document.createElement('a');
-      a.href = dataUri;
+      a.href = `data:application/octet-stream;base64,${b64}`;
       a.setAttribute('download', safeName);
       a.style.display = 'none';
       document.body.appendChild(a);
@@ -1541,25 +1613,11 @@
           </div>
         </div>
       `;
-      containerEl.querySelector('[data-tour="prev"]').onclick = () => {
-        idx = (idx - 1 + opts.steps.length) % opts.steps.length;
-        localStorage.setItem(storageKey + '_idx', String(idx));
-        render();
-      };
-      containerEl.querySelector('[data-tour="next"]').onclick = () => {
-        idx = (idx + 1) % opts.steps.length;
-        localStorage.setItem(storageKey + '_idx', String(idx));
-        render();
-      };
-      containerEl.querySelector('[data-tour="hide"]').onclick = () => {
-        hidden = true;
-        localStorage.setItem(storageKey + '_hide', '1');
-        render();
-      };
+      containerEl.querySelector('[data-tour="prev"]').onclick = () => { idx = (idx - 1 + opts.steps.length) % opts.steps.length; localStorage.setItem(storageKey + '_idx', String(idx)); render(); };
+      containerEl.querySelector('[data-tour="next"]').onclick = () => { idx = (idx + 1) % opts.steps.length; localStorage.setItem(storageKey + '_idx', String(idx)); render(); };
+      containerEl.querySelector('[data-tour="hide"]').onclick = () => { hidden = true; localStorage.setItem(storageKey + '_hide', '1'); render(); };
       const db = containerEl.querySelector('[data-tour="demo"]');
-      if (db && typeof step.onAction === 'function') {
-        db.onclick = () => step.onAction();
-      }
+      if (db && typeof step.onAction === 'function') db.onclick = () => step.onAction();
     }
     render();
     return { show: () => { hidden = false; localStorage.setItem(storageKey + '_hide', '0'); render(); } };
@@ -1568,6 +1626,6 @@
   root.MiLightRemoteStudio = {
     version: '2.5.0',
     normalizeTouchZones, defaultCalibration, resolvePhysicalToCustomAction, resolveCustomToPhysicalAction, mountInteractiveStage, mountPeelableStage, downloadTextFile, mountShowcaseTour,
-    buildOneToOnePrintSvg, openPrintSheetWindow, openFaciaDesigner
+    buildPodOrderPayload, buildOneToOnePrintSvg, openPrintSheetWindow, openFaciaDesigner
   };
 })(typeof window !== 'undefined' ? window : globalThis);

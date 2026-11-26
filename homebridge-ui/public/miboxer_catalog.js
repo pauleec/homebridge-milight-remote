@@ -1071,11 +1071,31 @@
 
 
 // === MIBOXER_FACIA_EXTENSION_START ===
-  const CAPACITIVE_LAYOUTS = new Set(['b8', 'b_strip', 'b0', 'b5', 'u_panel', 'm4']);
+  const CAPACITIVE_LAYOUTS = new Set([
+    'b8', 'b_strip', 'b0', 'b5', 'u_panel', 'm4',
+    'k_display', 's_puck', 'fut087',
+    'fut089', 'fut092', 'c_wheel', 'c_slot'
+  ]);
+
+  const SINGLE_STICK_ON_LAYOUTS = new Set([
+    'b8', 'b_strip', 'b0', 'b5', 'u_panel', 'm4',
+    's_puck', 'fut087'
+  ]);
+
+  function getStencilFitMode(modelOrId) {
+    const m = typeof modelOrId === 'string' ? (MODELS.find(x => x.id === modelOrId) || {}) : (modelOrId || {});
+    if (m.isCustom) return 'single_sheet';
+    return SINGLE_STICK_ON_LAYOUTS.has(m.layout) ? 'single_sheet' : 'cut_stickers';
+  }
+
+  function isSingleStickOnStencilReady(modelOrId) {
+    return getStencilFitMode(modelOrId) === 'single_sheet';
+  }
 
   function isCapacitiveFlatPanel(modelOrId) {
     const m = typeof modelOrId === 'string' ? (MODELS.find(x => x.id === modelOrId) || {}) : (modelOrId || {});
-    return (m.cat === 'panel' || m.isCustom) && CAPACITIVE_LAYOUTS.has(m.layout);
+    if (m.isCustom) return true;
+    return CAPACITIVE_LAYOUTS.has(m.layout);
   }
 
 
@@ -1118,6 +1138,11 @@
     if (layout === 'u_panel') return { width_mm: 70, height_mm: 114, glass_w_mm: 65, glass_h_mm: 109, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.5, mount: 'US Single-Gang Glass Wall Panel', form_factor: 'US Single-Gang Glass Wall Panel' };
     if (layout === 'm4') return { width_mm: 142, height_mm: 86, glass_w_mm: 136, glass_h_mm: 80, corner_mm: 4.0, led_x_pct: 8.5, led_y_pct: 11, mount: 'Italian 503/504 Landscape Glass Panel', form_factor: 'Italian 503/504 Landscape Glass Panel' };
     if (layout === 'b_strip' || layout === 'b0' || layout === 'b5') return { width_mm: 86, height_mm: 86, glass_w_mm: 81, glass_h_mm: 81, corner_mm: 4.0, led_x_pct: 50, led_y_pct: 8.0, mount: '86x86mm Square Glass Wall Panel', form_factor: '86x86mm Square Glass Wall Panel' };
+    if (layout === 'k_display') return { width_mm: 72, height_mm: 72, glass_w_mm: 66, glass_h_mm: 66, corner_mm: 36.0, shape: 'round', led_x_pct: 50, led_y_pct: 27, mount: '72mm Round Rotary Display Puck', form_factor: '72mm Round Rotary Knob / Puck' };
+    if (layout === 's_puck') return { width_mm: 70, height_mm: 70, glass_w_mm: 64, glass_h_mm: 64, corner_mm: 35.0, shape: 'round', led_x_pct: 50, led_y_pct: 16, mount: '70mm Round Magnetic Touch Puck', form_factor: '70mm Round Capacitive Puck' };
+    if (layout === 'fut087') return { width_mm: 80, height_mm: 80, glass_w_mm: 62, glass_h_mm: 62, corner_mm: 40.0, shape: 'round', led_x_pct: 50, led_y_pct: 18, mount: '80mm Round Dimmer Puck', form_factor: '80mm Round Touch Dimmer' };
+    if (layout === 'fut089') return { width_mm: 47, height_mm: 153, glass_w_mm: 43, glass_h_mm: 148, corner_mm: 10.0, led_x_pct: 50, led_y_pct: 5.5, mount: 'Handheld 8-Zone Remote Overlay', form_factor: '47x153mm Handheld 8-Zone Remote' };
+    if (layout === 'fut092' || layout === 'c_wheel' || layout === 'c_slot') return { width_mm: 47, height_mm: 138, glass_w_mm: 43, glass_h_mm: 133, corner_mm: 10.0, led_x_pct: 50, led_y_pct: 6.0, mount: 'Handheld 4-Zone Remote Overlay', form_factor: '47x138mm Handheld Capacitive Remote' };
     return { width_mm: 86, height_mm: 86, glass_w_mm: 80, glass_h_mm: 80, corner_mm: 4.0, mount: 'Standard Panel', form_factor: 'Standard Remote / Wall Panel' };
   }
 
@@ -1186,6 +1211,87 @@
 
   function escXml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Individual cut-sticker sheet builder for knobs, LCDs, rockers, physical buttons & handhelds
+  function getCutStickerSheet(modelOrId) {
+    const m = typeof modelOrId === 'string' ? (MODELS.find(x => x.id === modelOrId) || MODELS[0]) : (modelOrId || MODELS[0]);
+    const dims = getPhysicalDims(m);
+    const bp = getPanelBlueprint(m);
+    const stickers = [];
+
+    if (Array.isArray(bp.slots) && bp.slots.length > 0) {
+      bp.slots.forEach((sl, idx) => {
+        const wMm = sl.w ? Math.max(8, Math.round((sl.w / (bp.vw || 190)) * (dims.width_mm || 72) * 10) / 10) : 12;
+        const hMm = sl.h ? Math.max(8, Math.round((sl.h / (bp.vh || 190)) * (dims.height_mm || 72) * 10) / 10) : wMm;
+        stickers.push({
+          key: sl.key || `stk_${idx + 1}`,
+          label: sl.label || `Key ${idx + 1}`,
+          shape: sl.type === 'circle' ? 'circle' : 'rect',
+          width_mm: wMm,
+          height_mm: hMm,
+          action: sl.act || 'button_press',
+          zone: sl.zone != null ? sl.zone : null
+        });
+      });
+    } else {
+      const zCount = Math.min(8, Math.max(1, Number(m.zones || 4)));
+      stickers.push({ key: 'stk_on', label: 'ON', shape: 'rect', width_mm: 14, height_mm: 10, action: 'on', zone: null });
+      stickers.push({ key: 'stk_off', label: 'OFF', shape: 'rect', width_mm: 14, height_mm: 10, action: 'off', zone: null });
+      for (let z = 1; z <= zCount; z++) {
+        stickers.push({ key: `stk_z${z}`, label: `Z${z}`, shape: 'rect', width_mm: 12, height_mm: 10, action: 'zone', zone: z });
+      }
+    }
+
+    return {
+      model_id: m.id,
+      model_name: m.name || m.id,
+      layout: m.layout || 'standard',
+      fit_mode: getStencilFitMode(m),
+      base_dims_mm: { width_mm: dims.width_mm, height_mm: dims.height_mm },
+      sticker_count: stickers.length,
+      stickers
+    };
+  }
+
+  function renderCutStickerSheetSvg(modelOrId, opts) {
+    const o = opts || {};
+    const sheet = getCutStickerSheet(modelOrId);
+    const cols = 4;
+    const cellW = 54;
+    const cellH = 44;
+    const padX = 14;
+    const padY = 34;
+    const rows = Math.max(1, Math.ceil(sheet.stickers.length / cols));
+    const vw = padX * 2 + cols * cellW;
+    const vh = padY + rows * cellH + 28;
+
+    let itemsSvg = '';
+    sheet.stickers.forEach((stk, i) => {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const cx = padX + c * cellW + cellW / 2;
+      const cy = padY + r * cellH + cellH / 2 - 4;
+      const sw = Math.min(40, Math.max(18, stk.width_mm * 1.4));
+      const sh = Math.min(24, Math.max(14, stk.height_mm * 1.4));
+      if (stk.shape === 'circle') {
+        const rad = Math.min(sw, sh) / 2;
+        itemsSvg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}" fill="#ffffff" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="3,1.5"/>`;
+      } else {
+        itemsSvg += `<rect x="${(cx - sw / 2).toFixed(1)}" y="${(cy - sh / 2).toFixed(1)}" width="${sw.toFixed(1)}" height="${sh.toFixed(1)}" rx="3" fill="#ffffff" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="3,1.5"/>`;
+      }
+      itemsSvg += `<text x="${cx.toFixed(1)}" y="${(cy + 2.5).toFixed(1)}" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.5" font-weight="700" fill="#0f172a">${escXml(stk.label)}</text>`;
+      itemsSvg += `<text x="${cx.toFixed(1)}" y="${(cy + sh / 2 + 9).toFixed(1)}" text-anchor="middle" font-family="monospace" font-size="5.5" fill="#475569">${stk.width_mm}x${stk.height_mm}mm</text>`;
+    });
+
+    const calY = vh - 20;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vw} ${vh}" width="${o.width || vw * 2}" height="${o.height || vh * 2}">
+      <rect x="1" y="1" width="${vw - 2}" height="${vh - 2}" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="${padX}" y="17" font-family="Inter,system-ui,sans-serif" font-size="8.5" font-weight="800" fill="#0f172a">${escXml(sheet.model_name)} — Cut Stickers (${sheet.sticker_count})</text>
+      ${itemsSvg}
+      <rect x="${padX}" y="${calY}" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1"/>
+      <text x="${padX + 16}" y="${calY + 8.5}" font-family="monospace" font-size="6" fill="#334155">10x10mm Scale Check (Print 100%)</text>
+    </svg>`;
   }
 
   // Exact hardware stencil geometry for every capacitive flat panel layout!
@@ -1299,6 +1405,105 @@
       return { vw: 236, vh: 184, outer: { x: 6, y: 6, w: 224, h: 172, rx: 10 }, glass: { x: 11, y: 11, w: 214, h: 162, rx: 7 }, titleY: 25, slots };
     }
 
+    if (m.layout === 'k_display') {
+      const isK6 = m.kind === 'k6';
+      const slots = [];
+      if (isK6) {
+        slots.push({ key: 'hue_ring', type: 'ring', surf: 'hue_ring', act: 'hue', cx: 95, cy: 95, rIn: 65, rOut: 81, label: 'COLOR' });
+      }
+      // Inner buttons positioned cleanly inside rIn=65 and clear of center LED cutout (y=56..74)
+      slots.push(
+        { key: 'btn_on',  type: 'circle', act: 'on',          cx: 95,  cy: 103, r: 12.2, label: 'PWR', sublabel: 'Hold Off' },
+        { key: 'btn_bri', type: 'circle', act: 'brightness',  cx: 62,  cy: 56,  r: 11.0, label: 'BRI' },
+        { key: 'btn_cct', type: 'circle', act: 'kelvin',      cx: 128, cy: 56,  r: 11.0, label: 'CCT' },
+        { key: 'btn_pal', type: 'circle', act: 'set_white',   cx: 49,  cy: 95,  r: 11.0, label: isK6 ? 'RGB/W' : 'Z1' },
+        { key: 'btn_sat', type: 'circle', act: 'saturation',  cx: 141, cy: 95,  r: 11.0, label: isK6 ? 'SAT' : 'Z4' },
+        { key: 'btn_m',   type: 'circle', act: 'mode',        cx: 65,  cy: 133, r: 11.0, label: isK6 ? 'MODE' : 'Z2' },
+        { key: 'btn_dly', type: 'circle', act: 'night_mode',  cx: 125, cy: 133, r: 11.0, label: isK6 ? 'DELAY' : 'Z3' }
+      );
+      return {
+        vw: 190, vh: 190,
+        outer: { x: 10, y: 10, w: 170, h: 170, rx: 85 },
+        glass: { x: 14, y: 14, w: 162, h: 162, rx: 81 },
+        cutout: { x: 75, y: 57, w: 40, h: 18, rx: 4.5, text: '100%' },
+        titleY: 169,
+        slots
+      };
+    }
+
+    if (m.layout === 's_puck') {
+      const isRgb = m.kind === 's2';
+      const slots = [
+        isRgb
+          ? { key: 'hue_ring', type: 'ring', surf: 'hue_ring', act: 'hue', cx: 95, cy: 95, rIn: 54, rOut: 78, label: 'COLOR' }
+          : { key: 'cct_bar',  type: 'ring', surf: 'cct_bar',  act: 'kelvin', cx: 95, cy: 95, rIn: 54, rOut: 78, label: 'CCT' },
+        { key: 'btn_on',  type: 'circle', act: 'on',         cx: 95, cy: 74,  r: 15, label: 'ON' },
+        { key: 'btn_off', type: 'circle', act: 'off',        cx: 95, cy: 116, r: 15, label: 'OFF' },
+        { key: 'btn_sdn', type: 'circle', act: 'brightness', cx: 63, cy: 95,  r: 12, label: 'DIM-' },
+        { key: 'btn_sup', type: 'circle', act: 'mode',       cx: 127, cy: 95, r: 12, label: isRgb ? 'MODE' : 'DIM+' }
+      ];
+      return {
+        vw: 190, vh: 190,
+        outer: { x: 11, y: 11, w: 168, h: 168, rx: 84 },
+        glass: { x: 16, y: 16, w: 158, h: 158, rx: 79 },
+        titleY: 42,
+        slots
+      };
+    }
+
+    if (m.layout === 'fut087') {
+      const slots = [
+        { key: 'bri_bar', type: 'ring', surf: 'bri_bar', act: 'brightness', cx: 95, cy: 95, rIn: 48, rOut: 76, label: 'DIMMER' },
+        { key: 'btn_on',  type: 'circle', act: 'on', cx: 95, cy: 95, r: 28, label: 'ON / OFF', sublabel: 'Hold Night' }
+      ];
+      return {
+        vw: 190, vh: 190,
+        outer: { x: 11, y: 11, w: 168, h: 168, rx: 84 },
+        glass: { x: 17, y: 17, w: 156, h: 156, rx: 78 },
+        titleY: 36,
+        slots
+      };
+    }
+
+    if (m.layout === 'fut089') {
+      const slots = [
+        { key: 'btn_on',   type: 'rect', act: 'on',  x: 24, y: 24, w: 46, h: 20, rx: 10, label: 'ALL ON' },
+        { key: 'btn_off',  type: 'rect', act: 'off', x: 90, y: 24, w: 46, h: 20, rx: 10, label: 'ALL OFF' },
+        { key: 'hue_ring', type: 'ring', surf: 'hue_ring', act: 'hue', cx: 80, cy: 86, rIn: 19, rOut: 38, label: 'COLOR' },
+        { key: 'center_w', type: 'circle', act: 'set_white', cx: 80, cy: 86, r: 13, label: 'W' },
+        { key: 'bri_bar',  type: 'hbar', surf: 'bri_bar', act: 'brightness', x: 24, y: 132, w: 112, h: 15, label: 'BRIGHTNESS' },
+        { key: 'cct_bar',  type: 'hbar', surf: 'cct_bar', act: 'kelvin',     x: 24, y: 153, w: 112, h: 15, label: 'WARM / COOL' },
+        { key: 'btn_sdn',  type: 'rect', act: 'mode_speed_down', x: 24, y: 175, w: 34, h: 18, rx: 4, label: 'S-' },
+        { key: 'btn_m',    type: 'rect', act: 'mode',            x: 63, y: 175, w: 34, h: 18, rx: 4, label: 'M' },
+        { key: 'btn_sup',  type: 'rect', act: 'mode_speed_up',   x: 102, y: 175, w: 34, h: 18, rx: 4, label: 'S+' }
+      ];
+      for (let z = 1; z <= 8; z++) {
+        const row = z <= 4 ? 0 : 1;
+        const colIdx = (z - 1) % 4;
+        slots.push({ key: `zone_${z}`, type: 'rocker', act: 'zone', zone: z, x: 24 + colIdx * 29, y: 200 + row * 44, w: 25, h: 38, rx: 5, label: `${z}` });
+      }
+      return { vw: 160, vh: 300, outer: { x: 10, y: 6, w: 140, h: 288, rx: 22 }, glass: { x: 14, y: 10, w: 132, h: 280, rx: 19 }, titleY: 19, slots };
+    }
+
+    if (m.layout === 'fut092' || m.layout === 'c_wheel' || m.layout === 'c_slot') {
+      const slots = [
+        { key: 'btn_on',   type: 'rect', act: 'on',  x: 24, y: 26, w: 46, h: 20, rx: 10, label: 'ALL ON' },
+        { key: 'btn_off',  type: 'rect', act: 'off', x: 90, y: 26, w: 46, h: 20, rx: 10, label: 'ALL OFF' },
+        m.layout === 'c_slot'
+          ? { key: 'hue_ring', type: 'hbar', surf: 'hue_ring', act: 'hue', x: 24, y: 64, w: 112, h: 22, label: 'COLOR' }
+          : { key: 'hue_ring', type: 'ring', surf: 'hue_ring', act: 'hue', cx: 80, cy: 88, rIn: 19, rOut: 38, label: 'COLOR' },
+        { key: 'bri_bar',  type: 'hbar', surf: 'bri_bar', act: 'brightness', x: 24, y: 136, w: 112, h: 16, label: 'BRIGHTNESS' },
+        { key: 'cct_bar',  type: 'hbar', surf: 'cct_bar', act: 'kelvin',     x: 24, y: 158, w: 112, h: 16, label: 'CCT / SAT' },
+        { key: 'btn_w',    type: 'rect', act: 'set_white',       x: 24, y: 182, w: 34, h: 19, rx: 4, label: 'W' },
+        { key: 'btn_m',    type: 'rect', act: 'mode',            x: 63, y: 182, w: 34, h: 19, rx: 4, label: 'M' },
+        { key: 'btn_sup',  type: 'rect', act: 'mode_speed_up',   x: 102, y: 182, w: 34, h: 19, rx: 4, label: 'S+' }
+      ];
+      for (let z = 1; z <= (m.zones || 4); z++) {
+        slots.push({ key: `zone_${z}`, type: 'rocker', act: 'zone', zone: z, x: 24 + (z - 1) * 29, y: 210, w: 25, h: 52, rx: 5, label: `${z}` });
+      }
+      return { vw: 160, vh: 280, outer: { x: 10, y: 6, w: 140, h: 268, rx: 22 }, glass: { x: 14, y: 10, w: 132, h: 260, rx: 19 }, titleY: 19, slots };
+    }
+
     // B5 4-bar panel
     const slots = [];
     for (let z = 1; z <= 4; z++) {
@@ -1350,20 +1555,50 @@
     } else if (facia.bgPattern === 'brushed') {
       defs += `<pattern id="pat_${u}" width="8" height="3" patternUnits="userSpaceOnUse"><line x1="0" y1="1" x2="8" y2="1" stroke="${col.padStroke}" stroke-width="0.35" opacity="0.3"/></pattern>`;
     }
+    const lumCfg = facia.luminous || {};
+    const anyLum = Boolean(lumCfg.enabled || lumCfg.border || lumCfg.header || lumCfg.slots || Object.values(pads).some(p => p && p.luminous));
+    if (anyLum) {
+      defs += `<filter id="glow_${u}" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+    }
     defs += `</defs>`;
 
+    const bgCol = facia.bgColor || col.bg;
+    const glassCol = facia.bgColor || col.glass;
+    const bdrCol = facia.boundaryColor || col.padStroke || col.bezel;
+    const borderGlow = (lumCfg.enabled && lumCfg.border) ? ` filter="url(#glow_${u})"` : '';
+
     let body = `${defs}
-      <rect x="${bp.outer.x}" y="${bp.outer.y}" width="${bp.outer.w}" height="${bp.outer.h}" rx="${bp.outer.rx}" fill="${col.bg}" stroke="${col.bezel}" stroke-width="2"/>
-      <rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="${col.glass}" stroke="${col.bezel}" stroke-width="0.8"/>`;
+      <rect x="${bp.outer.x}" y="${bp.outer.y}" width="${bp.outer.w}" height="${bp.outer.h}" rx="${bp.outer.rx}" fill="${bgCol}" stroke="${bdrCol}" stroke-width="2"${borderGlow}/>
+      <rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="${glassCol}" stroke="${bdrCol}" stroke-width="0.8"${borderGlow}/>`;
 
     if (facia.bgPattern === 'grid' || facia.bgPattern === 'brushed') {
       body += `<rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="url(#pat_${u})" pointer-events="none"/>`;
     }
 
     if (facia.panelTitle) {
-      body += `<text x="${(bp.vw / 2).toFixed(1)}" y="${bp.titleY}" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.2" font-weight="800" letter-spacing="0.7" fill="${col.subInk}" pointer-events="none">${escXml(facia.panelTitle.toUpperCase())}</text>`;
+      const titleTxt = String(facia.panelTitle).trim().toUpperCase();
+      if (bp.outer && bp.outer.rx >= bp.outer.w * 0.45 && bp.outer.w === bp.outer.h) {
+        const tcx = bp.outer.x + bp.outer.w / 2;
+        const tcy = bp.outer.y + bp.outer.h / 2;
+        const tr = bp.outer.w / 2 + 5.5;
+        const tArcId = `ptArc_${u}`;
+        // Bottom-half clock arc from 135 deg to 225 deg (left-to-right upright)
+        const pA = polarPt(tcx, tcy, tr, 225);
+        const pB = polarPt(tcx, tcy, tr, 135);
+        body += `<defs><path id="${tArcId}" d="M ${pA.x.toFixed(2)} ${pA.y.toFixed(2)} A ${tr.toFixed(2)} ${tr.toFixed(2)} 0 0 0 ${pB.x.toFixed(2)} ${pB.y.toFixed(2)}"/></defs>`;
+        body += `<text font-family="Inter,system-ui,sans-serif" font-size="6.4" font-weight="800" letter-spacing="0.9" fill="${col.subInk}" pointer-events="none"><textPath href="#${tArcId}" startOffset="50%" text-anchor="middle">${escXml(titleTxt)}</textPath></text>`;
+      } else {
+        body += `<text x="${(bp.vw / 2).toFixed(1)}" y="${bp.titleY}" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="7.2" font-weight="800" letter-spacing="0.7" fill="${col.subInk}" pointer-events="none">${escXml(titleTxt)}</text>`;
+      }
     } else if (facia.hideLogo === false) {
       body += `<text x="${bp.glass.x + 12}" y="${bp.titleY}" font-family="Inter,system-ui,sans-serif" font-size="8" font-weight="800" fill="${col.subInk}" pointer-events="none">MiBOXER®</text>`;
+    }
+
+    if (bp.cutout) {
+      body += `<rect x="${bp.cutout.x}" y="${bp.cutout.y}" width="${bp.cutout.w}" height="${bp.cutout.h}" rx="${bp.cutout.rx}" fill="${o.stencilMode ? '#ffffff' : '#090b10'}" stroke="${col.padStroke}" stroke-width="0.9" stroke-dasharray="${o.stencilMode ? '2,1.5' : 'none'}" pointer-events="none"/>`;
+      if (!o.stencilMode && bp.cutout.text) {
+        body += `<text x="${(bp.cutout.x + bp.cutout.w / 2).toFixed(1)}" y="${(bp.cutout.y + bp.cutout.h * 0.74).toFixed(1)}" text-anchor="middle" fill="#f97316" font-family="monospace" font-size="11" font-weight="800" pointer-events="none">${escXml(bp.cutout.text)}</text>`;
+      }
     }
 
     if (facia.showLedPinhole) {
@@ -1456,18 +1691,80 @@
           const n = Math.min(12, Math.max(2, Number(surfCfg.segments || 6)));
           const span = 360 / n;
           const off = Number(surfCfg.offset_deg || 0);
+          const ringThick = Math.max(8, s.rOut - s.rIn);
           for (let i = 0; i < n; i++) {
             const sKey = `hue_seg_${i + 1}`;
             const cfg = pads[sKey] || {};
             const pc = padColors(cfg);
             const sDeg = off + i * span + 1.5, eDeg = off + (i + 1) * span - 1.5;
+            const midDeg = ((off + (i + 0.5) * span) % 360 + 360) % 360;
             const d = ringWedgePath(s.cx, s.cy, s.rIn, s.rOut, sDeg, eDeg);
             const isSelected = selKey === sKey;
             body += `<path class="mbx-seg-hit" data-seg-act="${sKey}" data-pad-key="${sKey}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} d="${d}" fill="${pc.fill}" stroke="${isSelected ? col.accent : pc.stroke}" stroke-width="${isSelected ? 2 : 1.05}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} style="cursor:pointer"/>`;
-            const mp = polarPt(s.cx, s.cy, (s.rIn + s.rOut) / 2, off + (i + 0.5) * span);
-            const defL = (surfCfg.labels && surfCfg.labels[i]) || `S${i + 1}`;
+            const defL = (surfCfg.labels && surfCfg.labels[i]) || `${i + 1}`;
+            const lblStr = (cfg && cfg.label !== undefined) ? String(cfg.label).trim() : defL;
+            const icoKey = (cfg && cfg.icon) || 'none';
+            const ico = FACIA_ICONS[icoKey];
+            const hasIco = Boolean(ico && ico.svg);
+            const ink = (cfg && cfg.color) || col.ink;
             if (pc.st !== 'blank') {
-              body += drawGlyphContent(mp.x, mp.y, (s.rOut - s.rIn) * 0.98, (s.rOut - s.rIn) * 0.98, cfg, defL, '');
+              const arcSpan = Math.max(10, eDeg - sDeg);
+              const isLowerArc = midDeg > 95 && midDeg < 265;
+              // Wide segments (>= 62 deg, e.g. 1/4 clock quadrants) flow text cleanly along a non-overlapping arc
+              if (arcSpan >= 62 && lblStr.length > 0) {
+                const textR = hasIco ? (s.rIn + ringThick * 0.30) : (s.rIn + ringThick * 0.54);
+                const padAng = Math.min(8, arcSpan * 0.12);
+                const a1 = isLowerArc ? (eDeg - padAng) : (sDeg + padAng);
+                const a2 = isLowerArc ? (sDeg + padAng) : (eDeg - padAng);
+                const pStart = polarPt(s.cx, s.cy, textR, a1);
+                const pEnd = polarPt(s.cx, s.cy, textR, a2);
+                const sweep = isLowerArc ? '0' : '1';
+                const lgFlag = Math.abs(eDeg - sDeg - padAng * 2) > 180 ? '1' : '0';
+                const arcId = `arc_${u}_${i}`;
+                const arcPath = `M ${pStart.x.toFixed(2)} ${pStart.y.toFixed(2)} A ${textR.toFixed(2)} ${textR.toFixed(2)} 0 ${lgFlag} ${sweep} ${pEnd.x.toFixed(2)} ${pEnd.y.toFixed(2)}`;
+                const arcFs = Math.max(4.4, Math.min(6.0, ringThick * 0.36));
+                body += `<defs><path id="${arcId}" d="${arcPath}"/></defs>`;
+                body += `<text font-family="Inter,system-ui,sans-serif" font-size="${arcFs.toFixed(2)}" font-weight="800" fill="${ink}" pointer-events="none"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle">${escXml(lblStr)}</textPath></text>`;
+                if (hasIco) {
+                  const ip = polarPt(s.cx, s.cy, s.rIn + ringThick * 0.74, midDeg);
+                  const isz = Math.max(5.2, Math.min(7.6, ringThick * 0.48));
+                  const inner = ico.svg.replace(/currentColor/g, ink);
+                  body += `<g transform="translate(${(ip.x - isz / 2).toFixed(2)},${(ip.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${inner}</g>`;
+                }
+                if (cfg && cfg.segmentMode === 'slider') {
+                  const sMin = Number(cfg.sliderMin ?? 0);
+                  const sMax = Number(cfg.sliderMax ?? 100);
+                  const trkR = s.rIn + ringThick * 0.88;
+                  const p1 = polarPt(s.cx, s.cy, trkR, sDeg + 3);
+                  const p2 = polarPt(s.cx, s.cy, trkR, eDeg - 3);
+                  const lg = Math.abs(eDeg - sDeg - 6) > 180 ? '1' : '0';
+                  body += `<path d="M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${trkR.toFixed(2)} ${trkR.toFixed(2)} 0 ${lg} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}" fill="none" stroke="${ink}" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.85" pointer-events="none"/>`;
+                  const rngTxt = `${sMin}–${sMax}%`;
+                  const rngFs = Math.max(3.8, Math.min(5.0, ringThick * 0.30));
+                  const rArcR = s.rIn + ringThick * 0.16;
+                  const ra1 = isLowerArc ? (eDeg - 4) : (sDeg + 4);
+                  const ra2 = isLowerArc ? (sDeg + 4) : (eDeg - 4);
+                  const rpA = polarPt(s.cx, s.cy, rArcR, ra1);
+                  const rpB = polarPt(s.cx, s.cy, rArcR, ra2);
+                  const rSwp = isLowerArc ? '0' : '1';
+                  const rLg = Math.abs(eDeg - sDeg - 8) > 180 ? '1' : '0';
+                  const rArcId = `rng_${u}_${i}`;
+                  body += `<defs><path id="${rArcId}" d="M ${rpA.x.toFixed(2)} ${rpA.y.toFixed(2)} A ${rArcR.toFixed(2)} ${rArcR.toFixed(2)} 0 ${rLg} ${rSwp} ${rpB.x.toFixed(2)} ${rpB.y.toFixed(2)}"/></defs>`;
+                  body += `<text font-family="monospace" font-size="${rngFs.toFixed(2)}" font-weight="700" fill="${col.subInk}" pointer-events="none"><textPath href="#${rArcId}" startOffset="50%" text-anchor="middle">${escXml(rngTxt)}</textPath></text>`;
+                }
+              } else {
+                // Narrower clock segments (6, 8, 12 slots): show crisp icon OR clean clock numeral/short label without ellipsis clutter
+                const mp = polarPt(s.cx, s.cy, (s.rIn + s.rOut) / 2, midDeg);
+                if (hasIco) {
+                  const isz = Math.max(6.2, Math.min(9.5, ringThick * 0.62));
+                  const inner = ico.svg.replace(/currentColor/g, ink);
+                  body += `<g transform="translate(${(mp.x - isz / 2).toFixed(2)},${(mp.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${inner}</g>`;
+                } else if (lblStr) {
+                  const clockLbl = lblStr.length > 4 ? String(i + 1) : lblStr;
+                  const cFs = Math.max(5.0, Math.min(7.2, ringThick * 0.46));
+                  body += `<text x="${mp.x.toFixed(2)}" y="${(mp.y + cFs * 0.35).toFixed(2)}" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="${cFs.toFixed(2)}" font-weight="800" fill="${ink}" pointer-events="none">${escXml(clockLbl)}</text>`;
+                }
+              }
             }
           }
           return;
@@ -1518,7 +1815,19 @@
             const isSelected = selKey === sKey;
             body += `<rect class="mbx-seg-hit" data-seg-act="${sKey}" data-pad-key="${sKey}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${rx.toFixed(2)}" y="${ry.toFixed(2)}" width="${rw.toFixed(2)}" height="${rh.toFixed(2)}" rx="3" fill="${pc.fill}" stroke="${isSelected ? col.accent : pc.stroke}" stroke-width="${isSelected ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} style="cursor:pointer"/>`;
             const defL = (surfCfg.labels && surfCfg.labels[i]) || `${i + 1}`;
-            if (pc.st !== 'blank') body += drawGlyphContent(rx + rw / 2, ry + rh / 2, rw, rh, cfg, defL, '');
+            if (pc.st !== 'blank') {
+              body += drawGlyphContent(rx + rw / 2, ry + rh / 2, rw, rh, cfg, defL, '');
+              if (cfg && cfg.segmentMode === 'slider') {
+                const sMin = Number(cfg.sliderMin ?? 0);
+                const sMax = Number(cfg.sliderMax ?? 100);
+                if (vert) {
+                  body += `<line x1="${(rx + 3).toFixed(1)}" y1="${(ry + rh - 3.5).toFixed(1)}" x2="${(rx + rw - 3).toFixed(1)}" y2="${(ry + rh - 3.5).toFixed(1)}" stroke="${ink}" stroke-width="1.3" stroke-dasharray="2,1.8" opacity="0.85" pointer-events="none"/>`;
+                } else {
+                  body += `<line x1="${(rx + 3.5).toFixed(1)}" y1="${(ry + rh - 3).toFixed(1)}" x2="${(rx + rw - 3.5).toFixed(1)}" y2="${(ry + rh - 3).toFixed(1)}" stroke="${ink}" stroke-width="1.3" stroke-dasharray="2,1.8" opacity="0.85" pointer-events="none"/>`;
+                }
+                body += `<text x="${(rx + rw / 2).toFixed(1)}" y="${(ry + rh - 4.8).toFixed(1)}" text-anchor="middle" font-family="monospace" font-size="4.4" font-weight="700" fill="${col.subInk}" pointer-events="none">${escXml(`${sMin}–${sMax}%`)}</text>`;
+              }
+            }
           }
           return;
         }
@@ -1558,7 +1867,9 @@
         const cfg = pads[s.key] || {};
         const pc = padColors(cfg);
         const zAttr = (s.zone !== undefined && s.zone !== null) ? `data-zone="${s.zone}"` : '';
-        body += `<circle class="mbx-hit" data-act="${s.act}" ${zAttr} data-pad-key="${s.key}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}" style="cursor:pointer"/>`;
+        const isLumC = Boolean((facia.luminous && facia.luminous.enabled && facia.luminous.slots) || (cfg && cfg.luminous));
+        const glowAttrC = isLumC ? ` filter="url(#glow_${u})"` : '';
+        body += `<circle class="mbx-hit" data-act="${s.act}" ${zAttr} data-pad-key="${s.key}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} cx="${s.cx}" cy="${s.cy}" r="${s.r}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}"${glowAttrC} style="cursor:pointer"/>`;
         if (pc.st !== 'blank') {
           body += drawGlyphContent(s.cx, s.cy, s.r * 1.85, s.r * 1.85, cfg, s.label, s.sublabel || '');
         } else if (showStencilSlots && selKey === s.key) {
@@ -1886,6 +2197,10 @@
     FACIA_ICONS,
     FACIA_THEMES,
     isCapacitiveFlatPanel,
+    isSingleStickOnStencilReady,
+    getStencilFitMode,
+    getCutStickerSheet,
+    renderCutStickerSheetSvg,
     resolveBaseModel,
     registerCustomModels,
     syncCustomModelsFromHub,
