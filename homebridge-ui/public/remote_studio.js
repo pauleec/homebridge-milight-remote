@@ -81,11 +81,8 @@
     return false; // Default to clean Light Mode stylesheet
   }
 
-  function injectStudioStyles() {
-    if (document.getElementById('mlrs-shared-styles')) return;
-    const st = document.createElement('style');
-    st.id = 'mlrs-shared-styles';
-    st.textContent = `
+  function injectStudioStyles(contextEl) {
+    const cssText = `
       .mbx-hit, .mbx-seg-hit { transition: filter 0.12s ease, stroke-width 0.12s ease; touch-action: none; }
       .mbx-hit.zone-active { stroke: #ea580c !important; stroke-width: 2.2px !important; }
       .mbx-hit.fire-rf, .mbx-seg-hit.fire-rf { stroke: #16a34a !important; stroke-width: 2.8px !important; filter: drop-shadow(0 0 6px rgba(22,163,74,0.75)); }
@@ -111,11 +108,69 @@
       }
       .mlrs-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; background: var(--mlrs-bg); border-bottom: 1px solid var(--mlrs-border); }
       .mlrs-preset-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 20px; background: var(--mlrs-muted); border-bottom: 1px solid var(--mlrs-border); font-size: 12px; }
-      .mlrs-body { display: grid; grid-template-columns: minmax(300px, 360px) 1fr minmax(320px, 400px); flex: 1; min-height: 0; overflow: hidden; }
+      .mlrs-body { display: grid; grid-template-columns: minmax(290px, 355px) minmax(0, 1fr) minmax(315px, 405px); flex: 1; min-height: 0; overflow: hidden; }
+      .mlrs-modal *, .mlrs-modal *::before, .mlrs-modal *::after { box-sizing: border-box; }
       @media (max-width: 1040px) { .mlrs-body { grid-template-columns: 1fr; overflow-y: auto; } }
-      .mlrs-col { padding: 14px 16px; overflow-y: auto; border-right: 1px solid var(--mlrs-border); background: var(--mlrs-bg); }
+      .mlrs-col { padding: 14px 16px; overflow-y: auto; overflow-x: hidden; min-width: 0; border-right: 1px solid var(--mlrs-border); background: var(--mlrs-bg); }
       .mlrs-col:last-child { border-right: none; border-left: 1px solid var(--mlrs-border); }
       .mlrs-stage-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--mlrs-muted); padding: 16px; overflow: auto; }
+      
+      @keyframes mlrsSpotPulse {
+        0%, 100% { box-shadow: 0 0 0 2px #f59e0b, 0 0 14px rgba(245, 158, 11, 0.45); }
+        50%      { box-shadow: 0 0 0 3.5px #0ea5e9, 0 0 22px rgba(14, 165, 233, 0.55); }
+      }
+      .mlrs-tour-focus {
+        border-radius: 8px !important;
+        animation: mlrsSpotPulse 1.8s ease-in-out infinite !important;
+        position: relative;
+        z-index: 5;
+      }
+      .mlrs-tour-done-badge {
+        display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+        border-radius: 999px; font-size: 11px; font-weight: 700;
+        background: #dcfce7; color: #166534; border: 1px solid #86efac;
+      }
+      .mlrs-tour-pending-badge {
+        display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+        border-radius: 999px; font-size: 11px; font-weight: 700;
+        background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;
+      }
+      .mlrs-stage-wrap.mlrs-night-room {
+        background: radial-gradient(circle at 50% 42%, #0f172a 0%, #030712 78%) !important;
+      }
+      .mlrs-stage-wrap.mlrs-night-room .mlrs-stage-card {
+        background: #060a13 !important;
+        border-color: rgba(110, 231, 183, 0.35) !important;
+        box-shadow: 0 0 38px rgba(16, 185, 129, 0.18), inset 0 0 18px rgba(16, 185, 129, 0.06) !important;
+      }
+      .mlrs-launcher-card {
+        background: #ffffff !important; border: 1px solid #cbd5e1 !important;
+        border-radius: 10px !important; padding: 9px 12px !important; margin: 0 0 10px 0 !important;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important; color: #0f172a !important;
+      }
+      .mlrs-launcher-grid {
+        display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 7px !important; margin-top: 7px !important;
+      }
+      @media (max-width: 960px) { .mlrs-launcher-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+      button.mlrs-wf-item, .mlrs-wf-item {
+        display: flex !important; align-items: center !important; gap: 9px !important; text-align: left !important;
+        background: #f8fafc !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important; padding: 7px 10px !important; cursor: pointer !important;
+        font-weight: 500 !important; box-shadow: none !important; width: 100% !important;
+        transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease !important;
+      }
+      button.mlrs-wf-item:hover, .mlrs-wf-item:hover {
+        border-color: #0284c7 !important; background: #f0f9ff !important; filter: none !important;
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.12) !important; transform: translateY(-1px) !important;
+      }
+      .mlrs-wf-ico {
+        font-size: 15px !important; line-height: 1 !important; width: 28px !important; height: 28px !important; border-radius: 7px !important;
+        background: #e0f2fe !important; border: 1px solid #bae6fd !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important;
+      }
+      .mlrs-lum-swatch {
+        display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+        background: #6ee7b7; box-shadow: 0 0 8px #34d399, 0 0 14px #10b981;
+      }
       .mlrs-stage-card { background: var(--mlrs-bg); border: 1px solid var(--mlrs-border); border-radius: 12px; padding: 20px 28px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
       .mlrs-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 20px; background: var(--mlrs-bg); border-top: 1px solid var(--mlrs-border); }
       .mlrs-btn { background: var(--mlrs-bg); color: var(--mlrs-fg); border: 1px solid var(--mlrs-border); border-radius: 6px; padding: 6px 12px; font-size: 12.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
@@ -125,7 +180,7 @@
       .mlrs-sec-title { font-size: 12.5px; font-weight: 700; color: var(--mlrs-fg); margin-bottom: 10px; }
       .mlrs-field { margin-bottom: 10px; }
       .mlrs-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--mlrs-fg); margin-bottom: 4px; }
-      .mlrs-input, .mlrs-select { width: 100%; background: var(--mlrs-input-bg); border: 1px solid var(--mlrs-border); color: var(--mlrs-fg); border-radius: 6px; padding: 6px 9px; font-size: 12.5px; }
+      .mlrs-input, .mlrs-select { width: 100%; max-width: 100%; box-sizing: border-box; background: var(--mlrs-input-bg); border: 1px solid var(--mlrs-border); color: var(--mlrs-fg); border-radius: 6px; padding: 6px 9px; font-size: 12.5px; }
       .mlrs-swatch { height: 32px; padding: 2px 4px; cursor: pointer; }
       .mlrs-icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
       .mlrs-icon-cell { aspect-ratio: 1; border: 1px solid var(--mlrs-border); border-radius: 6px; background: var(--mlrs-input-bg); color: var(--mlrs-fg); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 3px; }
@@ -174,7 +229,19 @@
 
       .mlrs-box-sub { padding: 9px 10px; border-radius: 8px; background: var(--mlrs-muted); border: 1px solid var(--mlrs-border); margin-bottom: 10px; }
     `;
-    document.head.appendChild(st);
+    if (document.head && !document.getElementById('mlrs-shared-styles')) {
+      const st = document.createElement('style');
+      st.id = 'mlrs-shared-styles';
+      st.textContent = cssText;
+      document.head.appendChild(st);
+    }
+    const rootNode = contextEl && typeof contextEl.getRootNode === 'function' ? contextEl.getRootNode() : null;
+    if (rootNode && rootNode !== document && typeof rootNode.querySelector === 'function' && !rootNode.querySelector('#mlrs-shared-styles')) {
+      const stShadow = document.createElement('style');
+      stShadow.id = 'mlrs-shared-styles';
+      stShadow.textContent = cssText;
+      rootNode.appendChild(stShadow);
+    }
   }
 
   // ============================================================================
@@ -200,7 +267,8 @@
       touchZones: tz,
       activeZone: activeZone,
       editorMode: editMode,
-      selectedPadKey: opts.selectedPadKey || null
+      selectedPadKey: opts.selectedPadKey || null,
+      luminousPreview: Boolean(opts.luminousPreview)
     });
 
     const svgEl = stageEl.querySelector('svg');
@@ -322,7 +390,7 @@
       const numVal = Number(rawVal);
       if (Number.isNaN(numVal)) return null;
 
-      // Wheel vs Bar check: if width & height are roughly square (>35x35), it's a Color Ring!
+      // Wheel vs Bar check: if width & height are roughly square (>35x35), it's a Colour Ring!
       if (normAct === 'hue' && bb.height > 32 && bb.width > 32 && Math.abs(bb.width - bb.height) < 20) {
         const cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
         const r = Math.max(bb.width, bb.height) * 0.42;
@@ -599,7 +667,9 @@
         slot: slotKey,
         label: cfg.label || slotKey,
         min_pct: Number(cfg.sliderMin ?? 0),
-        max_pct: Number(cfg.sliderMax ?? 100)
+        max_pct: Number(cfg.sliderMax ?? 100),
+        track_pitch_mm: Number(cfg.sliderPitch ?? f.sliderPitch ?? 2.2),
+        track_arrows: cfg.sliderArrows || f.sliderArrows || 'chevron'
       }));
 
     return {
@@ -623,7 +693,8 @@
         default_font: f.fontFamily || 'sans',
         default_font_scale_pct: Number(f.fontScale || 100),
         panel_title: f.panelTitle || '',
-        show_led_pinhole: f.showLedPinhole !== false
+        show_led_pinhole: f.showLedPinhole !== false,
+        background_image: (f.bgImage && f.bgImage.dataUrl) ? { fit: f.bgImage.fit || 'cover', scale_pct: Number(f.bgImage.scale ?? 100), offset_x_pct: Number(f.bgImage.x ?? 0), offset_y_pct: Number(f.bgImage.y ?? 0), opacity_pct: Number(f.bgImage.opacity ?? 88), pad_alpha_pct: Number(f.bgImage.padAlpha ?? 72), name: f.bgImage.name || 'custom_artwork', data_url: f.bgImage.dataUrl } : null
       },
       luminous_glow: {
         enabled: Boolean(lum.enabled || luminousSlots.length > 0),
@@ -699,6 +770,79 @@
     return `CUST_${baseId.replace(/[^A-Z0-9]/gi, '').toUpperCase()}_${clean || 'PANEL'}_${sfx}`;
   }
 
+  const WIP_STORAGE_KEY = 'mlrs_wip_drafts_v1';
+
+  function loadWipDrafts() {
+    try {
+      const raw = localStorage.getItem(WIP_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveWipDraftRecord(entry) {
+    const list = loadWipDrafts().filter(d => d && d.id !== entry.id);
+    list.unshift(entry);
+    while (list.length > 12) list.pop();
+    try {
+      localStorage.setItem(WIP_STORAGE_KEY, JSON.stringify(list));
+      return { ok: true, count: list.length };
+    } catch (e) {
+      // Quota fallback: keep latest 4 drafts
+      try {
+        localStorage.setItem(WIP_STORAGE_KEY, JSON.stringify(list.slice(0, 4)));
+        return { ok: true, count: Math.min(4, list.length) };
+      } catch (err2) {
+        return { ok: false, error: String(err2) };
+      }
+    }
+  }
+
+  function deleteWipDraftRecord(draftId) {
+    const list = loadWipDrafts().filter(d => d && d.id !== draftId);
+    try { localStorage.setItem(WIP_STORAGE_KEY, JSON.stringify(list)); } catch (_) {}
+    return list;
+  }
+
+  function compressImageFileToDataUrl(file, maxDim) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error('No file'));
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('File read error'));
+      reader.onload = () => {
+        const rawUrl = String(reader.result || '');
+        if (/^data:image\/svg/i.test(rawUrl) && rawUrl.length < 350000) {
+          return resolve(rawUrl);
+        }
+        const img = new Image();
+        img.onerror = () => resolve(rawUrl);
+        img.onload = () => {
+          const cap = maxDim || 880;
+          let w = img.naturalWidth || img.width || 600;
+          let h = img.naturalHeight || img.height || 800;
+          if (w > cap || h > cap) {
+            const sc = cap / Math.max(w, h);
+            w = Math.max(1, Math.round(w * sc));
+            h = Math.max(1, Math.round(h * sc));
+          }
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          const ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          // Preserve alpha if PNG/WebP, otherwise compact high-quality JPEG
+          const outMime = /png|webp/i.test(file.type) ? 'image/webp' : 'image/jpeg';
+          let outUrl = cv.toDataURL(outMime, 0.84);
+          if (outUrl.length > 480000) outUrl = cv.toDataURL('image/jpeg', 0.74);
+          resolve(outUrl);
+        };
+        img.src = rawUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function openFaciaDesigner(opts) {
     injectStudioStyles();
     const Cat = root.MiBoxerCatalog;
@@ -740,7 +884,47 @@
     let iconTab = model.zones > 1 ? 'room' : 'device';
     let activeZone = 1;
     let selectedPadKey = tz.hue_ring.enabled ? 'hue_seg_1' : (bp.slots.find(s => s.key === 'zone_1') ? 'zone_1' : 'btn_on');
-    let lastTestReadout = 'Load a Showcase Preset above or click any stencil slot on the panel to customize.';
+    let luminousPreview = false;
+    let step1Confirmed = false;
+    let currentDraftId = opts.draftId || null;
+    let refreshTourState = null;
+    let lastTestReadout = 'Load a Showcase Template above or click any stencil slot on the panel to customise.';
+
+    if (opts.initialWorkflow === 'bare_walkthrough') {
+      tz = normalizeTouchZones(null);
+      draft.pads = {};
+      draft.panelTitle = '';
+      localStorage.setItem('mlrs_tour_stencil_build_path_v5_hide', '0');
+      localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '0');
+      lastTestReadout = `Guided Bare-Panel Build started on ${baseModel.id} \u2014 start with Step 1 highlighted above!`;
+    } else if (opts.initialWorkflow === 'template_edit' && presets && presets[0]) {
+      tz = normalizeTouchZones(JSON.parse(JSON.stringify(presets[0].touch_zones)));
+      Object.assign(draft, JSON.parse(JSON.stringify(presets[0].facia)));
+      selectedPadKey = Object.keys(draft.pads || {})[0] || selectedPadKey;
+      step1Confirmed = true;
+      localStorage.setItem('mlrs_tour_stencil_build_path_v5_hide', '0');
+      localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '2');
+      lastTestReadout = `Loaded "${presets[0].name}" \u2014 click any slot to customise its behaviour, text, icons & glow!`;
+    } else if (opts.initialWorkflow === 'export_pod') {
+      if ((!draft.pads || !Object.keys(draft.pads).length) && presets && presets[0]) {
+        tz = normalizeTouchZones(JSON.parse(JSON.stringify(presets[0].touch_zones)));
+        Object.assign(draft, JSON.parse(JSON.stringify(presets[0].facia)));
+      }
+      lastTestReadout = `Ready for Export \u2014 use Print 1:1 Stencil Sheet, Download 1:1 SVG, or Download POD Spec JSON at the bottom-right!`;
+        } else if (opts.initialWorkflow === 'resume_draft') {
+      const savedList = loadWipDrafts();
+      const pick = (opts.draftId && savedList.find(d => d.id === opts.draftId)) || savedList.find(d => d.baseModelId === baseModel.id) || savedList[0];
+      if (pick) {
+        currentDraftId = pick.id;
+        customModelName = pick.name || customModelName;
+        tz = normalizeTouchZones(pick.touchZones);
+        Object.keys(draft).forEach(k => delete draft[k]);
+        Object.assign(draft, JSON.parse(JSON.stringify(pick.facia || { enabled: true, pads: {} })));
+        selectedPadKey = pick.selectedPadKey || selectedPadKey;
+        step1Confirmed = true;
+      }
+      lastTestReadout = currentDraftId ? `Resumed WIP Draft "${customModelName}" \u2014 continue editing or click Create Custom Remote when ready!` : 'No saved WIP drafts yet \u2014 click Save WIP Draft at the bottom anytime!';
+    }
     const stepState = {};
     let isFullscreen = false;
     const onFsChange = () => {
@@ -769,6 +953,13 @@
     }
 
     function renderModal() {
+      if (/^(hue|sat|bri|cct)_seg_/.test(selectedPadKey)) {
+        const pref = selectedPadKey.split('_')[0];
+        const surfKey = pref === 'hue' ? 'hue_ring' : (pref + '_bar');
+        if (!tz[surfKey] || !tz[surfKey].enabled) {
+          selectedPadKey = (bp.slots && bp.slots[0] && bp.slots[0].key) || 'zone_1';
+        }
+      }
       const presetTheme = Cat.FACIA_THEMES[draft.theme] || Cat.FACIA_THEMES.pure_white;
       const effColors = Object.assign({}, presetTheme, draft.colors || {});
       const curPad = draft.pads[selectedPadKey] || {};
@@ -781,20 +972,24 @@
           <div class="mlrs-topbar">
             <div>
               <div style="font-size:16px;font-weight:700">Capacitive Panel Facia &amp; Stencil Studio — ${remoteName} (${model.id})</div>
-              <div style="font-size:12px;color:var(--mlrs-muted-fg);margin-top:2px">${dims.width_mm} × ${dims.height_mm} mm Glass Stencil • Segment sliders into multi-function device pads &amp; standardized room icons</div>
+              <div style="font-size:12px;color:var(--mlrs-muted-fg);margin-top:2px">${dims.width_mm} × ${dims.height_mm} mm Glass Stencil • Segment sliders into multi-function device pads &amp; standardised room icons</div>
             </div>
             <div style="display:flex;gap:10px;align-items:center">
-              <div class="mlrs-pill-group">
+              <div class="mlrs-pill-group" id="mlrsTourStepModeBar">
                 <button type="button" class="mlrs-btn ${mode === 'edit' ? 'active-tab' : ''}" id="mlrsModeEdit">1. Design Stencil</button>
-                <button type="button" class="mlrs-btn ${mode === 'test' ? 'active-tab' : ''}" id="mlrsModeTest">2. Interactive Test (Tap / Hold)</button>
+                <button type="button" class="mlrs-btn ${mode === 'test' ? 'active-tab' : ''}" id="mlrsModeTest">2. Interactive Test (Tap / Scrub)</button>
               </div>
+              <button type="button" class="mlrs-btn ${luminousPreview ? 'active-tab' : ''}" id="mlrsLumPreviewBtn" title="Simulate a dark room at night to preview Strontium Aluminate glow-in-the-dark ink!">
+                <span class="mlrs-lum-swatch"></span> ${luminousPreview ? '☀️ Exit Dark Room' : '🌙 Dark-Room Glow'}
+              </button>
+              ${luminousPreview ? `<button type="button" class="mlrs-btn" id="mlrsTopGlowAllBtn" style="border-color:#10b981;color:#059669;font-weight:700" title="Turn on Luminous Glow for every button, ring &amp; slider at once">✨ Glow All</button>` : ''}
               ${opts.onOpenGestures ? `<button type="button" class="mlrs-btn" id="mlrsOpenGestBtn">🎛️ Gestures &amp; Segments</button>` : ''}
               <button type="button" class="mlrs-btn ${isFullscreen ? 'active-tab' : ''}" id="mlrsFullBtn">${isFullscreen ? '❐ Exit Fullscreen' : '⤢ Fullscreen'}</button>
               <button type="button" class="mlrs-btn" id="mlrsCloseBtn">✕ Close</button>
             </div>
           </div>
 
-          <div class="mlrs-preset-bar" style="justify-content:space-between">
+          <div class="mlrs-preset-bar" id="mlrsTourStepIdentity" style="justify-content:space-between">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span style="padding:3px 8px;border-radius:5px;background:var(--mlrs-bg);border:1px solid var(--mlrs-border);font-weight:700">
                 ${isEditingExistingCustom ? `Editing Custom Type: ${rawModel.id}` : `Base Hardware: ${baseModel.id} (Read-Only)`}
@@ -804,7 +999,19 @@
               ${opts.hexId ? `<label style="display:flex;align-items:center;gap:5px;margin-left:6px;cursor:pointer;font-weight:500"><input type="checkbox" id="mlrsBindNowChk" ${bindCurrentRemote ? 'checked' : ''}/> Assign to ${hexId} now</label>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="font-weight:600;color:var(--mlrs-muted-fg)">Starter Templates:</span>
+              ${(() => {
+                const allWips = loadWipDrafts();
+                const matchingWips = allWips.filter(d => !d.baseModelId || d.baseModelId === baseModel.id);
+                if (!matchingWips.length) return '';
+                return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(2,132,199,0.09);border:1px solid rgba(2,132,199,0.35);padding:2px 6px;border-radius:6px">
+                  <select class="mlrs-select" id="mlrsResumeWipSel" style="width:auto;max-width:205px;padding:2px 6px;font-size:11.5px;font-weight:600">
+                    <option value="">📂 WIP Drafts (${matchingWips.length})…</option>
+                    ${matchingWips.map(d => `<option value="${d.id}" ${currentDraftId === d.id ? 'selected' : ''}>📝 ${d.name} (${d.savedAtShort || 'saved'})</option>`).join('')}
+                  </select>
+                  ${currentDraftId ? `<button type="button" class="mlrs-btn danger-outline" id="mlrsDelWipBtn" style="padding:2px 6px;font-size:11px" title="Delete this WIP draft">✕</button>` : ''}
+                </span>`;
+              })()}
+              <button type="button" class="mlrs-btn" id="mlrsResetBareBtn" title="Reset to a bare factory panel so you can build from scratch">🧼 Bare Panel</button><span style="font-weight:600;color:var(--mlrs-muted-fg)">Templates:</span>
               ${presets.map((pr, idx) => `<button type="button" class="mlrs-btn" data-preset-idx="${idx}" title="${pr.desc}">✨ ${pr.name.split(' (')[0]}</button>`).join('')}
             </div>
           </div>
@@ -813,7 +1020,7 @@
           <div class="mlrs-body">
             <!-- LEFT: Touch Bar/Ring Segmentation + Surface Theme -->
             <div class="mlrs-col">
-              ${panelSurfaces.length ? `
+              <div id="mlrsTourStepSplit">${panelSurfaces.length ? `
                 <div class="mlrs-sec-title">1. Segment Wheels &amp; Bars (Buttons or Sliders)</div>
                 <div style="background:var(--mlrs-muted);border:1px solid var(--mlrs-border);border-left:3px solid var(--mlrs-primary);border-radius:6px;padding:7px 9px;margin-bottom:9px;font-size:11px;line-height:1.42;color:var(--mlrs-fg)">
                   <b>💡 Segmented Slider Pro-Tips:</b> Any slice on a <b>360° Ring</b> or <b>Straight Bar</b> can act independently as a <b>Tap/Hold Button</b> <i>or</i> a <b>Variable Slider</b> with custom <b>X% → Y%</b> endpoints (e.g. <code>15–80%</code> night-safe dimmer, <code>100–0%</code> inverted blind drop, or two half-bars for Sheer &amp; Blockout).
@@ -823,7 +1030,7 @@
                     const sc = tz[ps.surf];
                     const maxS = ps.surf === 'hue_ring' ? 8 : 5;
                     const minS = ps.surf === 'hue_ring' ? 3 : 2;
-                    const friendly = ps.surf === 'hue_ring' ? (ps.type === 'ring' ? 'Color Ring' : 'Top Color Strip') : ps.surf === 'cct_bar' ? 'CCT Strip' : ps.surf === 'sat_bar' ? 'Left Touch Bar' : 'Dimmer Bar';
+                    const friendly = ps.surf === 'hue_ring' ? (ps.type === 'ring' ? 'Colour Ring' : 'Top Colour Strip') : ps.surf === 'cct_bar' ? 'CCT Strip' : ps.surf === 'sat_bar' ? 'Left Touch Bar' : 'Dimmer Bar';
                     return `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;font-size:12px">
                       <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-weight:600">
                         <input type="checkbox" data-seg-toggle="${ps.surf}" ${sc.enabled ? 'checked' : ''}/> ${friendly}
@@ -835,9 +1042,9 @@
                   }).join('')}
                   <div style="font-size:11px;color:var(--mlrs-muted-fg);margin-top:4px">Enabled bars split into individual icon buttons on both the stencil &amp; ESP32 Hub!</div>
                 </div>
-              ` : ''}
+              ` : ''}</div>
 
-              <div class="mlrs-sec-title">2. Surface Theme &amp; Print Palette</div>
+              <div class="mlrs-sec-title" style="margin-top:14px">2. Surface Theme &amp; Print Palette</div>
               <div class="mlrs-field">
                 <label>Theme Preset</label>
                 <select class="mlrs-select" id="mlrsThemeSel">
@@ -860,13 +1067,60 @@
               </div>
               <div class="mlrs-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div>
-                  <label>Background Color</label>
+                  <label>Background Colour</label>
                   <input type="color" class="mlrs-input" id="mlrsBgColor" style="height:32px;padding:2px" value="${draft.bgColor || '#111827'}"/>
                 </div>
                 <div>
-                  <label>Boundary Line Color</label>
+                  <label>Boundary Line Colour</label>
                   <input type="color" class="mlrs-input" id="mlrsBoundaryColor" style="height:32px;padding:2px" value="${draft.boundaryColor || '#94a3b8'}"/>
                 </div>
+              </div>
+              <div class="mlrs-box-sub" style="margin-bottom:10px;border-left:3px solid #0284c7">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px">
+                  <label style="font-size:12px;font-weight:700;margin:0">🖼️ Custom Background Graphic</label>
+                  <div style="display:flex;gap:4px">
+                    <input type="file" id="mlrsBgImgFile" accept="image/*" style="display:none"/>
+                    <button type="button" class="mlrs-btn" id="mlrsBgImgPickBtn" style="padding:2px 8px;font-size:11px;font-weight:600">${(draft.bgImage && draft.bgImage.dataUrl) ? '🔄 Change' : '+ Upload Image'}</button>
+                    ${(draft.bgImage && draft.bgImage.dataUrl) ? `<button type="button" class="mlrs-btn danger-outline" id="mlrsBgImgClearBtn" style="padding:2px 6px;font-size:11px" title="Remove background graphic">✕</button>` : ''}
+                  </div>
+                </div>
+                ${(draft.bgImage && draft.bgImage.dataUrl) ? `
+                  <div style="font-size:10.5px;color:var(--mlrs-muted-fg);margin-bottom:6px">Artwork: <b>${(draft.bgImage.name || 'Custom Graphic').replace(/[<>&"]/g, '')}</b> — align button overlays onto your graphic:</div>
+                  <div style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:6px;margin-bottom:6px">
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600">Fit Mode</label>
+                      <select class="mlrs-select" id="mlrsBgImgFit" style="padding:3px 6px;font-size:11px">
+                        <option value="cover" ${(draft.bgImage.fit || 'cover') === 'cover' ? 'selected' : ''}>Cover (Fill Glass)</option>
+                        <option value="contain" ${draft.bgImage.fit === 'contain' ? 'selected' : ''}>Contain (Whole Image)</option>
+                        <option value="stretch" ${draft.bgImage.fit === 'stretch' ? 'selected' : ''}>Stretch 1:1</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600">Zoom (${draft.bgImage.scale ?? 100}%)</label>
+                      <input type="range" min="40" max="250" step="2" id="mlrsBgImgScale" value="${draft.bgImage.scale ?? 100}" style="width:100%;accent-color:#0284c7"/>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600">Pan X (${draft.bgImage.x ?? 0}%)</label>
+                      <input type="range" min="-60" max="60" step="1" id="mlrsBgImgX" value="${draft.bgImage.x ?? 0}" style="width:100%;accent-color:#0284c7"/>
+                    </div>
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600">Pan Y (${draft.bgImage.y ?? 0}%)</label>
+                      <input type="range" min="-60" max="60" step="1" id="mlrsBgImgY" value="${draft.bgImage.y ?? 0}" style="width:100%;accent-color:#0284c7"/>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600" title="Opacity of the background artwork">Image Opacity (${draft.bgImage.opacity ?? 88}%)</label>
+                      <input type="range" min="10" max="100" step="2" id="mlrsBgImgOp" value="${draft.bgImage.opacity ?? 88}" style="width:100%;accent-color:#0284c7"/>
+                    </div>
+                    <div>
+                      <label style="font-size:10.5px;font-weight:600" title="0% = transparent button outlines over photo; 100% = solid keycaps">Button Backing (${draft.bgImage.padAlpha ?? 72}%)</label>
+                      <input type="range" min="0" max="100" step="4" id="mlrsBgImgPadAlpha" value="${draft.bgImage.padAlpha ?? 72}" style="width:100%;accent-color:#0284c7"/>
+                    </div>
+                  </div>
+                ` : `<div style="font-size:10.5px;color:var(--mlrs-muted-fg);line-height:1.35">Upload any room photo, floorplan, wood/marble texture, or custom artwork and fit your translucent button overlays right onto it.</div>`}
               </div>
               <div class="mlrs-field">
                 <label>Panel Header Title</label>
@@ -884,14 +1138,22 @@
                   <input type="number" min="65" max="145" step="5" class="mlrs-input" id="mlrsPanelFontScale" value="${draft.fontScale || 100}"/>
                 </div>
               </div>
-              <div class="mlrs-box-sub" style="margin-bottom:8px">
-                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:5px">
-                  <input type="checkbox" id="mlrsLumMaster" ${(draft.luminous && draft.luminous.enabled) ? 'checked' : ''}/> Luminous / Glow-in-the-Dark (POD)
-                </label>
+              <div class="mlrs-box-sub" id="mlrsTourStepLuminous" style="margin-bottom:8px;border-left:3px solid #10b981">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer;margin:0">
+                    <input type="checkbox" id="mlrsLumMaster" ${(draft.luminous && draft.luminous.enabled) ? 'checked' : ''}/> <span class="mlrs-lum-swatch"></span> Luminous Glow Ink (POD)
+                  </label>
+                  <button type="button" class="mlrs-btn ${luminousPreview ? 'active-tab' : ''}" id="mlrsLumCardPreviewBtn" style="padding:2px 7px;font-size:10.5px">${luminousPreview ? '☀️ Day View' : '🌙 Test in Dark'}</button>
+                </div>
+                <div style="font-size:10.5px;color:var(--mlrs-muted-fg);margin-bottom:6px;line-height:1.35">Strontium Aluminate pigment looks subtle off-white by day and emits soft <b>aqua-green glow</b> in total darkness:</div>
+                <div style="display:flex;gap:5px;margin-bottom:6px">
+                  <button type="button" class="mlrs-btn" id="mlrsGlowAllBtn" style="flex:1;justify-content:center;padding:3px 6px;font-size:11px;border-color:#10b981;color:#059669;font-weight:700">✨ Glow Everything</button>
+                  <button type="button" class="mlrs-btn" id="mlrsGlowNoneBtn" style="padding:3px 8px;font-size:11px">✕ Clear Glow</button>
+                </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px">
                   <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumBorder" ${(draft.luminous && draft.luminous.border) ? 'checked' : ''}/> Outer Boundary</label>
                   <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumHeader" ${(draft.luminous && draft.luminous.header) ? 'checked' : ''}/> Header / Title</label>
-                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumSlots" ${(draft.luminous && draft.luminous.slots) ? 'checked' : ''}/> All Pads / Ring</label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mlrsLumSlots" ${(draft.luminous && draft.luminous.slots) ? 'checked' : ''}/> All Buttons, Wheel &amp; Sliders</label>
                 </div>
               </div>
               <div class="mlrs-field" style="display:flex;flex-direction:column;gap:5px">
@@ -901,7 +1163,7 @@
             </div>
 
             <!-- CENTER: Accurate 1:1 Capacitive Stencil Canvas -->
-            <div class="mlrs-stage-wrap">
+            <div class="mlrs-stage-wrap ${luminousPreview ? 'mlrs-night-room' : ''}">
               <div style="margin-bottom:10px;font-size:12px;color:var(--mlrs-muted-fg);text-align:center">
                 ${mode === 'edit' ? '👆 <b>Design Mode:</b> Click any button, room rocker, or segmented wheel/bar slot to assign its icon &amp; function' : '🧪 <b>Interactive Test:</b> Short-tap multi-function pads to step (1→6), or <b>Hold 0.6s</b> to toggle ON/OFF!'}
               </div>
@@ -913,65 +1175,117 @@
               </div>
             </div>
 
-            <!-- RIGHT: Selected Slot Inspector + Standardized Room & Device Icons -->
+            <!-- RIGHT: Selected Slot Inspector + Standardised Room & Device Icons -->
             <div class="mlrs-col">
               <div class="mlrs-sec-title" style="margin-bottom:6px">3. Selected Slot: <code style="padding:2px 6px;border-radius:4px;background:var(--mlrs-muted);border:1px solid var(--mlrs-border)">${selectedPadKey}</code></div>
+              ${(() => {
+                const surfMap = { hue_ring: 'hue_ring', hue: 'hue_ring', sat_bar: 'sat_bar', saturation: 'sat_bar', bri_bar: 'bri_bar', brightness: 'bri_bar', cct_bar: 'cct_bar', kelvin: 'cct_bar' };
+                const targetSurf = surfMap[selectedPadKey];
+                if (targetSurf && tz[targetSurf] && !tz[targetSurf].enabled) {
+                  return `<div class="mlrs-box-sub" style="margin-bottom:10px;border-left:3px solid var(--mlrs-primary)">
+                    <div style="font-size:11.5px;font-weight:700;margin-bottom:4px">Continuous Touch Surface Selected</div>
+                    <div style="font-size:11px;color:var(--mlrs-muted-fg);margin-bottom:7px">Split this surface into 2–8 discrete buttons or custom <b>X% → Y% variable sliders</b>:</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                      <button type="button" class="mlrs-btn primary" id="mlrsQuickSplitSlider" data-surf="${targetSurf}">⚡ Split as Variable Sliders</button>
+                      <button type="button" class="mlrs-btn" id="mlrsQuickSplitBtn" data-surf="${targetSurf}">Split as Tap/Hold Buttons</button>
+                    </div>
+                  </div>`;
+                }
+                return '';
+              })()}
 
-              ${/^(hue|bri|cct|sat)_seg_\d+$/.test(selectedPadKey) ? `
-              <div class="mlrs-field">
-                <label>Segment Behavior (Button vs. Variable Slider)</label>
-                <select class="mlrs-select" id="mlrsSegMode">
-                  <option value="button" ${(curPad.segmentMode || 'button') === 'button' ? 'selected' : ''}>Button (Tap / Step / Hold)</option>
-                  <option value="slider" ${curPad.segmentMode === 'slider' ? 'selected' : ''}>Variable Slider (Custom X% to Y% Range)</option>
-                </select>
-                ${curPad.segmentMode === 'slider' ? `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-                  <div>
-                    <label style="font-size:11px">Start End (X %)</label>
-                    <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMin" value="${curPad.sliderMin ?? 0}"/>
+              ${(() => {
+                const isSegSlot = /^(hue|bri|cct|sat)_seg_\d+$/.test(selectedPadKey);
+                const slotDef = bp.slots.find(sl => sl.key === selectedPadKey);
+                const isUnsplitBar = Boolean(slotDef && (slotDef.type === 'vbar' || slotDef.type === 'hbar') && (!slotDef.surf || !tz[slotDef.surf] || !tz[slotDef.surf].enabled));
+                const supportsSlider = isSegSlot || isUnsplitBar;
+                const effMode = isUnsplitBar
+                  ? (curPad.segmentMode || 'slider')
+                  : ((isSegSlot && curPad.segmentMode === 'slider') ? 'slider' : (curMf.enabled ? 'multistep' : 'button'));
+                return `
+                <div class="mlrs-box-sub" id="mlrsTourStepBehaviour" style="margin-bottom:10px">
+                  <label style="display:block;font-size:11.5px;font-weight:700;margin-bottom:6px">Slot Function &amp; Touch Behaviour</label>
+                  <div style="display:grid;grid-template-columns:${supportsSlider ? '1fr 1fr 1fr' : '1fr 1fr'};gap:5px;margin-bottom:7px">
+                    <button type="button" class="mlrs-btn ${effMode === 'button' ? 'active-tab' : ''}" style="justify-content:center;padding:5px 6px;font-size:11.5px" data-slot-mode="button">🔘 Tap / Toggle</button>
+                    <button type="button" class="mlrs-btn ${effMode === 'multistep' ? 'active-tab' : ''}" style="justify-content:center;padding:5px 6px;font-size:11.5px" data-slot-mode="multistep">🔢 Step Cycle</button>
+                    ${supportsSlider ? `<button type="button" class="mlrs-btn ${effMode === 'slider' ? 'active-tab' : ''}" style="justify-content:center;padding:5px 6px;font-size:11.5px" data-slot-mode="slider">🎚️ ${isUnsplitBar ? 'Slider &amp; Arrows' : 'X–Y% Slider'}</button>` : ''}
                   </div>
-                  <div>
-                    <label style="font-size:11px">Far / Max End (Y %)</label>
-                    <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMax" value="${curPad.sliderMax ?? 100}"/>
-                  </div>
-                </div>
-                <div style="font-size:10.5px;color:var(--mlrs-muted-fg);margin-top:4px">Tip: Set <code>100</code> → <code>0</code> to invert direction (e.g. blinds lowering), or cap range (e.g. <code>15</code> → <code>85</code>). Scrub across the segment in <b>Mode 2</b> to test!</div>` : ''}
-              </div>` : ''}
+                  ${effMode === 'button' ? `
+                    <div style="font-size:11px;color:var(--mlrs-muted-fg);line-height:1.38">Standard button pad (<b>1× Tap</b>, <b>2× Double</b>, <b>Hold</b>). Save stencil below to bind any HA/Homebridge entity in the Visual Mapper.</div>
+                  ` : ''}
+                  ${effMode === 'multistep' ? `
+                    <div style="font-size:11px;color:var(--mlrs-muted-fg);margin-bottom:6px">Short tap steps <b>1 → N</b> (e.g. Fan Speed / Blind Pos); <b>Long Hold</b> toggles OFF.</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+                      <div><label style="font-size:11px">Cycle Steps (2–8)</label><input type="number" min="2" max="8" class="mlrs-input" id="mlrsMfSteps" value="${curMf.steps || 5}"/></div>
+                      <div><label style="font-size:11px">Step Unit</label><input type="text" class="mlrs-input" id="mlrsMfUnit" placeholder="Spd / Pos / Temp" value="${curMf.unit || 'Spd'}"/></div>
+                    </div>
+                  ` : ''}
+                  ${effMode === 'slider' ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px">
+                      <div>
+                        <label style="font-size:11px">Left / Start End (%)</label>
+                        <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMin" value="${curPad.sliderMin ?? 0}"/>
+                      </div>
+                      <div>
+                        <label style="font-size:11px">Right / Far End (%)</label>
+                        <input type="number" min="0" max="100" class="mlrs-input" id="mlrsSegMax" value="${curPad.sliderMax ?? 100}"/>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:0.88fr 1.12fr;gap:8px;margin-top:7px">
+                      <div>
+                        <label style="font-size:11px" title="0 = Solid line, 1.2 = Fine dots, 2.2 = Standard, 3.8 = Wide dash">Dot Pitch (mm)</label>
+                        <input type="number" min="0" max="8" step="0.2" class="mlrs-input" id="mlrsSegPitch" value="${curPad.sliderPitch ?? draft.sliderPitch ?? 2.2}"/>
+                      </div>
+                      <div>
+                        <label style="font-size:11px">Track End Arrows</label>
+                        <select class="mlrs-select" id="mlrsSegArrows">
+                          ${(() => {
+                            const ar = curPad.sliderArrows || draft.sliderArrows || 'chevron';
+                            return `
+                              <option value="chevron" ${ar === 'chevron' ? 'selected' : ''}>‹ ⋯⋯ › Open Chevrons</option>
+                              <option value="triangle" ${ar === 'triangle' ? 'selected' : ''}>◄ ⋯⋯ ► Solid Arrows</option>
+                              <option value="dots" ${ar === 'dots' ? 'selected' : ''}>• ⋯⋯ ● Min/Max Dots</option>
+                              <option value="ticks" ${ar === 'ticks' ? 'selected' : ''}>| ⋯⋯ | Scale End Ticks</option>
+                              <option value="none" ${ar === 'none' ? 'selected' : ''}>⋯⋯⋯ Dots Only (No Caps)</option>
+                              <option value="factory" ${ar === 'factory' ? 'selected' : ''}>🎨 Factory Gradient Bar</option>
+                            `;
+                          })()}
+                        </select>
+                      </div>
+                    </div>
+                    <div style="font-size:10.5px;color:var(--mlrs-muted-fg);margin-top:5px">Use <code>100 → 0</code> to invert (e.g. Blinds) or <code>15 → 85</code> to cap brightness.</div>
+                  ` : ''}
+                </div>`;
+              })()}
 
-              <div class="mlrs-field">
-                <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer">
-                  <input type="checkbox" id="mlrsPadLuminous" ${curPad.luminous ? 'checked' : ''}/> Luminous / Glow on This Slot (POD)
-                </label>
-              </div>
-              <div class="mlrs-field">
-                <label>Slot Visibility / Style</label>
-                <select class="mlrs-select" id="mlrsPadStyle">
-                  <option value="" ${!curPad.style ? 'selected' : ''}>Use Panel Default (${draft.defaultPadStyle})</option>
-                  <option value="keycap" ${curPad.style === 'keycap' ? 'selected' : ''}>Filled Keycap</option>
-                  <option value="outline" ${curPad.style === 'outline' ? 'selected' : ''}>Crisp Outline</option>
-                  <option value="minimal" ${curPad.style === 'minimal' ? 'selected' : ''}>Icon + Label Only</option>
-                  <option value="blank" ${curPad.style === 'blank' ? 'selected' : ''}>Mask / Blank Unused Slot</option>
-                </select>
-              </div>
-
+              <div id="mlrsTourStepTypography">
               <div class="mlrs-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div>
-                  <label>Primary Label</label>
-                  <input type="text" class="mlrs-input" id="mlrsPadLabel" placeholder="e.g. Living, Fan" value="${curPad.label !== undefined ? curPad.label : ''}"/>
+                  <label>Main Label (Line 1)</label>
+                  <input type="text" class="mlrs-input" id="mlrsPadLabel" placeholder="e.g. Blinds, Living" value="${curPad.label !== undefined ? curPad.label : ''}"/>
                 </div>
                 <div>
-                  <label>Sub-Label / Function Hint</label>
-                  <input type="text" class="mlrs-input" id="mlrsPadSub" placeholder="Auto (X–Y% / Hold) or custom" value="${curPad.sublabel !== undefined ? curPad.sublabel : ''}"/>
+                  <label>Sub-Label (Line 2)</label>
+                  <input type="text" class="mlrs-input" id="mlrsPadSub" placeholder="Auto (X→Y% / Hold) or custom" value="${curPad.sublabel !== undefined ? curPad.sublabel : ''}"/>
                 </div>
               </div>
 
-              <div class="mlrs-field" style="display:grid;grid-template-columns:1fr 1fr 0.72fr;gap:7px">
+              <div class="mlrs-field" style="display:grid;grid-template-columns:1.2fr 0.95fr 0.65fr;gap:6px">
                 <div>
-                  <label title="Keep icon out of the way so arc/button text stays centered">Icon Position</label>
+                  <label title="Place icon beside text (Left/Right/Both Ends) so Main + Sub text stay centered!">Icon Placement</label>
                   <select class="mlrs-select" id="mlrsPadIconPos">
-                    <option value="top" ${(curPad.iconPos || 'top') === 'top' ? 'selected' : ''}>Top / Outer Edge</option>
-                    <option value="bottom" ${curPad.iconPos === 'bottom' ? 'selected' : ''}>Bottom / Inner Edge</option>
-                    <option value="none" ${curPad.iconPos === 'none' ? 'selected' : ''}>Text Only (No Icon)</option>
+                    ${(() => {
+                      const isVBarSel = Boolean((bp.slots.find(sl => sl.key === selectedPadKey) || {}).type === 'vbar'); const defPos = isVBarSel ? 'both' : (/^hue_seg_/.test(selectedPadKey) ? 'left' : 'top');
+                      const pos = curPad.iconPos || defPos;
+                      return `
+                        <option value="left" ${pos === 'left' ? 'selected' : ''}>⬅️ Left of Text</option>
+                        <option value="right" ${pos === 'right' ? 'selected' : ''}>➡️ Right of Text</option>
+                        <option value="both" ${pos === 'both' ? 'selected' : ''}>↔️ Dual (Left &amp; Right Ends)</option>
+                        <option value="top" ${pos === 'top' ? 'selected' : ''}>⬆️ Above Text</option>
+                        <option value="bottom" ${pos === 'bottom' ? 'selected' : ''}>⬇️ Below Text</option>
+                        <option value="none" ${pos === 'none' ? 'selected' : ''}>🔤 Text Only (No Icon)</option>
+                      `;
+                    })()}
                   </select>
                 </div>
                 <div>
@@ -987,23 +1301,34 @@
                 </div>
               </div>
 
-              <!-- Single-Button Multi-Function Showcase Config (Tap = Step 1..N, Hold = Toggle ON/OFF) -->
-              <div class="mlrs-box-sub">
-                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:5px">
-                  <input type="checkbox" id="mlrsMfChk" ${curMf.enabled ? 'checked' : ''}/> Single-Button Multi-Function (Step + Hold)
+              ${((curPad.iconPos || ((bp.slots.find(sl => sl.key === selectedPadKey) || {}).type === 'vbar' ? 'both' : '')) === 'both') ? `
+              <div class="mlrs-field">
+                <label>Right / Far-End Secondary Icon (Dual Mode)</label>
+                <select class="mlrs-select" id="mlrsPadIconEnd">
+                  ${Object.entries(Cat.FACIA_ICONS || {}).map(([ik, iv]) => `<option value="${ik}" ${(curPad.iconEnd || curPad.icon || 'sun') === ik ? 'selected' : ''}>${iv.name || ik}</option>`).join('')}
+                </select>
+              </div>` : ''}
+              </div>
+
+              <div class="mlrs-field" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;align-items:end">
+                <div>
+                  <label>Slot Visibility / Style</label>
+                  <select class="mlrs-select" id="mlrsPadStyle">
+                    <option value="" ${!curPad.style ? 'selected' : ''}>Use Panel Default (${draft.defaultPadStyle})</option>
+                    <option value="keycap" ${curPad.style === 'keycap' ? 'selected' : ''}>Filled Keycap</option>
+                    <option value="outline" ${curPad.style === 'outline' ? 'selected' : ''}>Crisp Outline</option>
+                    <option value="minimal" ${curPad.style === 'minimal' ? 'selected' : ''}>Icon + Label Only</option>
+                    <option value="blank" ${curPad.style === 'blank' ? 'selected' : ''}>Mask / Blank Unused Slot</option>
+                  </select>
+                </div>
+                <label style="display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer;padding-bottom:7px">
+                  <input type="checkbox" id="mlrsPadLuminous" ${(curPad.luminous || (draft.luminous && draft.luminous.enabled && draft.luminous.slots)) ? 'checked' : ''}/> Glow Slot (POD)
                 </label>
-                <div style="font-size:11px;color:var(--mlrs-muted-fg);margin-bottom:6px">Short tap increments step (+1 cycle); long press toggles ON/OFF.</div>
-                ${curMf.enabled ? `
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
-                    <div><label style="font-size:11px">Cycle Steps (2–8)</label><input type="number" min="2" max="8" class="mlrs-input" id="mlrsMfSteps" value="${curMf.steps || 6}"/></div>
-                    <div><label style="font-size:11px">Step Unit</label><input type="text" class="mlrs-input" id="mlrsMfUnit" placeholder="Spd / Pos / Temp" value="${curMf.unit || 'Spd'}"/></div>
-                  </div>
-                ` : ''}
               </div>
 
               <div class="mlrs-field">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                  <label style="margin:0">Standardized Icons</label>
+                  <label style="margin:0">Standardised Icons</label>
                   <div class="mlrs-pill-group">
                     <button type="button" class="mlrs-btn ${iconTab === 'room' ? 'active-tab' : ''}" style="padding:3px 8px;font-size:11px" id="mlrsTabRoom">Rooms (12)</button>
                     <button type="button" class="mlrs-btn ${iconTab === 'device' ? 'active-tab' : ''}" style="padding:3px 8px;font-size:11px" id="mlrsTabDev">Devices (20)</button>
@@ -1020,7 +1345,7 @@
             </div>
           </div>
 
-          <div class="mlrs-footer">
+          <div class="mlrs-footer ${opts.initialWorkflow === 'export_pod' ? 'mlrs-tour-focus' : ''}">
             <div style="display:flex;gap:8px;align-items:center">
               ${isEditingExistingCustom ? `<button type="button" class="mlrs-btn danger-outline" id="mlrsDeleteCustomBtn">Delete Custom Remote (${rawModel.id})</button>` : `<span style="font-size:12px;color:var(--mlrs-muted-fg)">Factory ${baseModel.id} is read-only — saving creates a reusable Custom Remote type.</span>`}
             </div>
@@ -1029,6 +1354,7 @@
               <button type="button" class="mlrs-btn" id="mlrsDlSvgBtn">Download 1:1 SVG</button>
               <button type="button" class="mlrs-btn" id="mlrsDlPodBtn">Download POD Spec JSON</button>
               ${isEditingExistingCustom ? `<button type="button" class="mlrs-btn" id="mlrsSaveCopyBtn">Save as New Copy</button>` : ''}
+              <button type="button" class="mlrs-btn" id="mlrsSaveWipBtn" style="border-color:#0284c7;color:#0284c7;font-weight:700" title="Save your work-in-progress draft so you can close and come back later without overwriting live remotes">📝 Save WIP Draft</button>
               <button type="button" class="mlrs-btn" id="mlrsCancelBtn">Cancel</button>
               <button type="button" class="mlrs-btn primary" id="mlrsDeployBtn">${isEditingExistingCustom ? 'Update Custom Remote' : '+ Create Custom Remote'}</button>
             </div>
@@ -1043,7 +1369,7 @@
           squareHeight: isFullscreen ? 'min(70vh, 720px)' : 'min(56vh, 500px)',
           facia: draft, touchZones: tz, calibration: cal, activeZone,
           editMode: mode === 'edit', selectedPadKey: mode === 'edit' ? selectedPadKey : null,
-          stepState,
+          luminousPreview, stepState,
           onSelectPad: (pk) => { selectedPadKey = pk; renderModal(); },
           onZoneChange: (z) => { activeZone = z; },
           onAction: (act, val, z, customMsg) => {
@@ -1053,6 +1379,9 @@
             if (typeof opts.onTestAction === 'function') opts.onTestAction(act, val, z);
           }
         });
+        const b = backdrop.querySelector('#mlrsTestBanner');
+        if (b) b.textContent = lastTestReadout;
+        if (typeof refreshTourState === 'function') refreshTourState();
       };
       refreshStageOnly();
 
@@ -1096,16 +1425,145 @@
       }
       const tourBox = backdrop.querySelector('#mlrsStudioTourMount');
       if (tourBox) {
-        mountShowcaseTour(tourBox, {
-          tourId: 'stencil_editor',
+        const hasSegSurfaces = panelSurfaces.length > 0;
+        const hasBothRingAndBar = panelSurfaces.some(p => p.type === 'ring') && panelSurfaces.some(p => p.type !== 'ring');
+        const surfFriendlyList = panelSurfaces.map(ps =>
+          ps.surf === 'hue_ring' ? (ps.type === 'ring' ? 'Colour Ring' : 'Top Colour Strip')
+          : ps.surf === 'cct_bar' ? 'CCT Strip'
+          : ps.surf === 'sat_bar' ? 'Left Touch Bar' : 'Dimmer Bar'
+        );
+        const primarySurfLabel = surfFriendlyList[0] || 'Button Pad';
+
+        const tourCtrl = mountShowcaseTour(tourBox, {
+          tourId: 'stencil_build_path_v5',
+          scopeEl: backdrop,
           steps: [
-            { title: 'Full-Viewport Canvas & Starter Templates', body: 'Click Fullscreen above for maximum design space, or load a Starter Template to auto-populate room icons & segmented wheel buttons.', actionLabel: 'Toggle Fullscreen', onAction: () => backdrop.querySelector('#mlrsFullBtn')?.click() },
-            { title: 'Hybrid Buttons & Variable X%–Y% Sliders on Rings or Bars', body: 'Any segmented ring arc or straight bar slice can be a Tap/Hold Button OR a Variable Slider (0–100%, capped 15–80%, or inverted 100–0%) with centered arc text & top/bottom icon placement!', actionLabel: 'Load Hybrid Slider Showcase', onAction: () => { const btn = backdrop.querySelector('[data-preset-idx="0"]'); if (btn) btn.click(); } },
-            { title: 'Architectural Themes & Blank Pad Masking', body: 'Switch between Pure White, Warm Travertine, or Matte Black vinyl palettes and set unused buttons to Blank Masked.', actionLabel: 'Preview Warm Stone', onAction: () => { draft.theme = 'warm_stone'; draft.colors = null; renderModal(); } },
-            { title: 'Single-Button Step-Cycling + Hold Toggle', body: 'Enable Multi-Function on any pad so short taps cycle speeds/positions (1 to 6) while a long hold toggles OFF — test it live in Mode 2!', actionLabel: 'Switch to Interactive Test', onAction: () => { mode = 'test'; renderModal(); } },
-            { title: 'Calibrated 1:1 Millimeter Print & SVG Export', body: 'Print Sheet adds a 10 mm verification square, and Download 1:1 SVG uses an HTTP attachment stream compatible with download extensions.', actionLabel: 'Download 1:1 SVG', onAction: () => backdrop.querySelector('#mlrsDlSvgBtn')?.click() }
+            {
+              title: `Step 1 (${baseModel.id}) \u2014 Name Your Custom Stencil & Pick Starting Point`,
+              hintShort: 'Edit Custom Remote Name above or click Start Bare & Next',
+              targetSelector: '#mlrsTourStepIdentity',
+              isComplete: () => step1Confirmed,
+              body: `You are editing <b>${baseModel.id}</b> (${surfFriendlyList.length ? 'supports splitting: <b>' + surfFriendlyList.join(' + ') + '</b>' : 'discrete button pads'}). ` +
+                    (!hasBothRingAndBar ? `<i>Tip: Want to test <b>both</b> a 360\u00b0 Arc Slider and a Straight Bar Slider together? Close &amp; pick <b>B8</b> or <b>B0</b>, or <a href="#" id="mlrsSwitchToB8Link" style="color:var(--mlrs-primary);font-weight:700;text-decoration:underline">click here to switch this session to B8 Showcase</a>!</i> ` : '') +
+                    `Otherwise type a <b>Custom Remote Name</b> above (keep <b>Assign to ${hexId}</b> ticked) or click <b>\u2705 Start Bare &amp; Next \u25B6</b>.`,
+              actionLabel: '\u2705 Start Bare & Go to Step 2 \u25B6',
+              onAction: () => {
+                step1Confirmed = true;
+                tz = normalizeTouchZones(null);
+                draft.pads = {};
+                selectedPadKey = (bp.slots && bp.slots[0] && bp.slots[0].key) || 'zone_1';
+                localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '1');
+                renderModal();
+              }
+            },
+            {
+              title: hasSegSurfaces ? `Step 2 \u2014 Split ${baseModel.id}'s ${primarySurfLabel} Into Segments` : `Step 2 \u2014 Select a Button Pad on ${baseModel.id}`,
+              hintShort: hasSegSurfaces ? `Tick ${primarySurfLabel} in Section 1 (left)` : 'Click a button on the center remote',
+              targetSelector: hasSegSurfaces ? '#mlrsTourStepSplit' : '#mlrsCanvasStage',
+              isComplete: () => !hasSegSurfaces || Object.values(tz || {}).some(s => Boolean(s && s.enabled)),
+              body: hasSegSurfaces
+                ? `In the highlighted <b>1. Segment Wheels &amp; Bars</b> box on the left, tick <b>${surfFriendlyList.join('</b> or <b>')}</b> and choose how many segments (2\u20138) to create.`
+                : `<b>${baseModel.id}</b> uses dedicated buttons rather than continuous sliders \u2014 click any button pad on the center faceplate to configure it.`,
+              actionLabel: hasSegSurfaces ? `\u26A1 Split ${primarySurfLabel} & Next \u25B6` : 'Select Pad #1 & Next \u25B6',
+              onAction: () => {
+                if (hasSegSurfaces) {
+                  const sk = panelSurfaces[0].surf;
+                  tz[sk].enabled = true;
+                  tz[sk].segments = sk === 'hue_ring' ? 4 : 2;
+                  selectedPadKey = sk === 'hue_ring' ? 'hue_seg_1' : (sk.split('_')[0] + '_seg_1');
+                }
+                localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '2');
+                mode = 'edit';
+                renderModal();
+              }
+            },
+            {
+              title: 'Step 3 \u2014 Choose Tap/Toggle, Step-Cycle, or X\u2013Y% Variable Slider',
+              hintShort: 'Pick a mode pill + Dot Pitch / Arrows on the right',
+              targetSelector: '#mlrsTourStepBehaviour',
+              onEnter: () => {
+                const activeSurf = panelSurfaces.find(ps => tz[ps.surf] && tz[ps.surf].enabled);
+                if (activeSurf && !/^(hue|sat|bri|cct)_seg_/.test(selectedPadKey)) {
+                  const sk = activeSurf.surf;
+                  selectedPadKey = sk === 'hue_ring' ? 'hue_seg_1' : (sk.split('_')[0] + '_seg_1');
+                  renderModal();
+                }
+              },
+              isComplete: () => Object.values(draft.pads || {}).some(p => Boolean(p && (p.segmentMode === 'slider' || (p.multifunc && p.multifunc.enabled)))),
+              body: hasSegSurfaces
+                ? 'In the highlighted <b>Slot Function</b> card (right), click <b>\uD83C\uDF9A\uFE0F X\u2013Y% Slider</b> to set custom <b>Start/End %</b> (e.g. <code>100 \u2192 0</code>), <b>Dot Pitch (mm)</b>, and <b>Track End Arrows</b> \u2014 or pick <b>\uD83D\uDD22 Step Cycle</b>!'
+                : 'In the highlighted <b>Slot Function</b> card (right), click <b>\uD83D\uDD22 Step Cycle</b> (tap steps 1\u2192N, hold = OFF) or <b>\uD83D\uDD18 Tap / Toggle</b>.',
+              actionLabel: hasSegSurfaces ? '\uD83C\uDF9A\uFE0F Set 100\u21920% Slider & Next \u25B6' : '\uD83D\uDD22 Set 5-Step Cycle & Next \u25B6',
+              onAction: () => {
+                if (hasSegSurfaces) {
+                  if (!Object.values(tz).some(s => s && s.enabled)) {
+                    const sk = panelSurfaces[0].surf;
+                    tz[sk].enabled = true; tz[sk].segments = sk === 'hue_ring' ? 4 : 2;
+                    selectedPadKey = sk === 'hue_ring' ? 'hue_seg_1' : (sk.split('_')[0] + '_seg_1');
+                  }
+                  const p = ensurePad();
+                  p.segmentMode = 'slider'; p.sliderMin = 100; p.sliderMax = 0; p.sliderPitch = 2.2; p.sliderArrows = 'chevron';
+                } else {
+                  const p = ensurePad();
+                  p.multifunc = { enabled: true, steps: 5, unit: 'Spd' };
+                }
+                localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '3');
+                renderModal();
+              }
+            },
+            {
+              title: 'Step 4 \u2014 Set Main/Sub Text & Left / Right / Dual Icons',
+              hintShort: 'Type Main Label + pick Left, Right, or Dual Icons',
+              targetSelector: '#mlrsTourStepTypography',
+              isComplete: () => {
+                const p = draft.pads && draft.pads[selectedPadKey];
+                return Boolean(p && p.label && p.icon && p.icon !== 'none');
+              },
+              body: 'In the highlighted <b>Labels &amp; Icon Placement</b> section (right), enter <b>Main + Sub Labels</b> and place icons to the <b>Left</b>, <b>Right</b>, or <b>Dual (Left &amp; Right Ends)</b> so text stays centered.',
+              actionLabel: '\u2194\uFE0F Demo Dual Icons & Next \u25B6',
+              onAction: () => {
+                const p = ensurePad();
+                p.label = p.label || 'Blinds'; p.sublabel = p.sublabel || '100\u21920% Slide';
+                p.iconPos = 'both'; p.icon = 'blinds'; p.iconEnd = 'sun';
+                localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '4');
+                renderModal();
+              }
+            },
+            {
+              title: 'Step 5 \u2014 Preview Nighttime Luminous Ink & Scrub Live',
+              hintShort: 'Click Test in Dark or 2. Interactive Test',
+              targetSelector: '#mlrsTourStepLuminous',
+              isComplete: () => Boolean(luminousPreview || mode === 'test' || (draft.luminous && draft.luminous.enabled)),
+              body: 'Tick <b>Luminous Glow Ink</b> in the highlighted box and click <b>\uD83C\uDF19 Test in Dark</b> to see how Strontium Aluminate glows at night \u2014 and try <b>2. Interactive Test</b> at the top to scrub your slider live!',
+              actionLabel: '\uD83C\uDF19 Preview Night Glow & Next \u25B6',
+              onAction: () => {
+                luminousPreview = true;
+                draft.luminous = Object.assign({ enabled: true, border: true, header: true, slots: false }, draft.luminous || {}, { enabled: true, border: true });
+                localStorage.setItem('mlrs_tour_stencil_build_path_v5_idx', '5');
+                renderModal();
+              }
+            },
+            {
+              title: 'Step 6 \u2014 Save Stencil & Map Real HA / Homebridge Devices',
+              hintShort: 'Click Create / Update Custom Remote at bottom-right',
+              targetSelector: '#mlrsDeployBtn',
+              isComplete: () => false,
+              body: `Click the highlighted <b>${isEditingExistingCustom ? 'Update Custom Remote' : '+ Create Custom Remote'}</b> button at the bottom-right! That attaches this stencil to <b>${hexId}</b> and returns you to the Visual Mapper to bind lights, blinds, fans, or scenes.`,
+              actionLabel: '\uD83D\uDCBE Save & Return to Mapper',
+              onAction: () => backdrop.querySelector('#mlrsDeployBtn')?.click()
+            }
           ]
         });
+        const switchB8Link = backdrop.querySelector('#mlrsSwitchToB8Link');
+        if (switchB8Link) {
+          switchB8Link.onclick = (ev) => {
+            ev.preventDefault();
+            backdrop.remove();
+            const b8Mod = Cat.MODELS.find(m => m.id === 'CUST_B8_SLIDER_SHOWCASE') || Cat.MODELS.find(m => m.id === 'B8');
+            if (b8Mod) openFaciaDesigner(Object.assign({}, opts, { model: b8Mod, remoteName: 'B8 Hybrid Slider Showcase', bindRemoteByDefault: false }));
+          };
+        }
+        refreshTourState = tourCtrl ? tourCtrl.refresh : null;
       }
       backdrop.querySelector('#mlrsCancelBtn').onclick = () => backdrop.remove();
 
@@ -1117,10 +1575,32 @@
           tz = normalizeTouchZones(JSON.parse(JSON.stringify(pr.touch_zones)));
           Object.assign(draft, JSON.parse(JSON.stringify(pr.facia)));
           selectedPadKey = Object.keys(draft.pads || {})[0] || selectedPadKey;
-          lastTestReadout = `Loaded "${pr.name}" — switch to "2. Interactive Test" to try short-tap step cycling & long-hold toggle!`;
+          step1Confirmed = true;
+          lastTestReadout = `Loaded "${pr.name}" — inspect any slot or click 2. Interactive Test to scrub sliders live!`;
           renderModal();
         };
       });
+
+      const qsSlider = backdrop.querySelector('#mlrsQuickSplitSlider');
+      if (qsSlider) qsSlider.onclick = () => {
+        const sk = qsSlider.getAttribute('data-surf');
+        tz[sk].enabled = true;
+        tz[sk].segments = sk === 'hue_ring' ? 4 : 2;
+        const pref = sk === 'hue_ring' ? 'hue_seg_1' : sk === 'cct_bar' ? 'cct_seg_1' : sk === 'sat_bar' ? 'sat_seg_1' : 'bri_seg_1';
+        selectedPadKey = pref;
+        const p = ensurePad();
+        p.segmentMode = 'slider';
+        if (p.sliderMin === undefined) p.sliderMin = 0;
+        if (p.sliderMax === undefined) p.sliderMax = 100;
+        renderModal();
+      };
+      const qsBtn = backdrop.querySelector('#mlrsQuickSplitBtn');
+      if (qsBtn) qsBtn.onclick = () => {
+        const sk = qsBtn.getAttribute('data-surf');
+        tz[sk].enabled = true;
+        selectedPadKey = sk === 'hue_ring' ? 'hue_seg_1' : sk === 'cct_bar' ? 'cct_seg_1' : sk === 'sat_bar' ? 'sat_seg_1' : 'bri_seg_1';
+        renderModal();
+      };
 
       // Segmentation toggles & counts
       backdrop.querySelectorAll('[data-seg-toggle]').forEach(chk => {
@@ -1166,14 +1646,36 @@
       const lumHeaderEl = backdrop.querySelector('#mlrsLumHeader');
       if (lumHeaderEl) lumHeaderEl.onchange = (e) => { const l = ensureLum(); l.header = e.target.checked; if (e.target.checked) l.enabled = true; refreshStageOnly(); };
       const lumSlotsEl = backdrop.querySelector('#mlrsLumSlots');
-      if (lumSlotsEl) lumSlotsEl.onchange = (e) => { const l = ensureLum(); l.slots = e.target.checked; if (e.target.checked) l.enabled = true; refreshStageOnly(); };
+      if (lumSlotsEl) lumSlotsEl.onchange = (e) => { const l = ensureLum(); l.slots = e.target.checked; if (e.target.checked) l.enabled = true; renderModal(); };
+      const applyGlowAll = () => {
+        draft.luminous = { enabled: true, border: true, header: true, slots: true };
+        luminousPreview = true;
+        renderModal();
+      };
+      const glowAllBtn = backdrop.querySelector('#mlrsGlowAllBtn');
+      if (glowAllBtn) glowAllBtn.onclick = applyGlowAll;
+      const topGlowAllBtn = backdrop.querySelector('#mlrsTopGlowAllBtn');
+      if (topGlowAllBtn) topGlowAllBtn.onclick = applyGlowAll;
+      const glowNoneBtn = backdrop.querySelector('#mlrsGlowNoneBtn');
+      if (glowNoneBtn) glowNoneBtn.onclick = () => {
+        draft.luminous = { enabled: false, border: false, header: false, slots: false };
+        Object.values(draft.pads || {}).forEach(p => { if (p) delete p.luminous; });
+        renderModal();
+      };
       const padLumEl = backdrop.querySelector('#mlrsPadLuminous');
       if (padLumEl) padLumEl.onchange = (e) => { const p = ensurePad(); p.luminous = e.target.checked; refreshStageOnly(); };
       backdrop.querySelector('#mlrsMonoChk').onchange = (e) => { draft.monochrome = e.target.checked; renderModal(); };
       backdrop.querySelector('#mlrsLedHole').onchange = (e) => { draft.showLedPinhole = e.target.checked; refreshStageOnly(); };
 
       // Right Column Inspector
-      const ensurePad = () => { if (!draft.pads[selectedPadKey]) draft.pads[selectedPadKey] = {}; return draft.pads[selectedPadKey]; };
+      const ensurePad = () => {
+        if (!draft.pads[selectedPadKey]) draft.pads[selectedPadKey] = {};
+        const slDef = bp.slots.find(sl => sl.key === selectedPadKey);
+        if (slDef && (slDef.type === 'vbar' || slDef.type === 'hbar') && draft.pads[selectedPadKey].sliderArrows !== 'factory') {
+          draft.pads[selectedPadKey].customTrack = true;
+        }
+        return draft.pads[selectedPadKey];
+      };
       backdrop.querySelector('#mlrsPadStyle').onchange = (e) => { const p = ensurePad(); if (e.target.value) p.style = e.target.value; else delete p.style; renderModal(); };
       const segModeEl = backdrop.querySelector('#mlrsSegMode');
       if (segModeEl) segModeEl.onchange = (e) => {
@@ -1188,6 +1690,46 @@
         p.sliderMin = Math.max(0, Math.min(100, Number(e.target.value || 0)));
         refreshStageOnly();
       };
+            const toggleNightPreview = () => {
+        luminousPreview = !luminousPreview;
+        if (luminousPreview && !(draft.luminous && (draft.luminous.enabled || Object.values(draft.pads || {}).some(p => p && p.luminous)))) {
+          draft.luminous = Object.assign({ enabled: true, border: true, header: true, slots: false }, draft.luminous || {}, { enabled: true, border: true });
+        }
+        renderModal();
+      };
+      const lumPrevBtn = backdrop.querySelector('#mlrsLumPreviewBtn');
+      if (lumPrevBtn) lumPrevBtn.onclick = toggleNightPreview;
+      const lumCardPrevBtn = backdrop.querySelector('#mlrsLumCardPreviewBtn');
+      if (lumCardPrevBtn) lumCardPrevBtn.onclick = toggleNightPreview;
+
+      const bareBtn = backdrop.querySelector('#mlrsResetBareBtn');
+      if (bareBtn) bareBtn.onclick = () => {
+        tz = normalizeTouchZones(null);
+        draft.pads = {};
+        draft.panelTitle = '';
+        draft.luminous = { enabled: false, border: false, header: false, slots: false };
+        luminousPreview = false;
+        selectedPadKey = (bp.slots && bp.slots[0] && bp.slots[0].key) || 'zone_1';
+        step1Confirmed = true;
+        lastTestReadout = `Reset to bare ${baseModel.id} panel — now click Next ▶ in the Guided Path to split a wheel or bar!`;
+        renderModal();
+      };
+
+      const segPitchEl = backdrop.querySelector('#mlrsSegPitch');
+      if (segPitchEl) segPitchEl.oninput = (e) => {
+        const p = ensurePad();
+        p.sliderPitch = Math.max(0, Math.min(8, Number(e.target.value ?? 2.2)));
+        refreshStageOnly();
+      };
+      const segArrowsEl = backdrop.querySelector('#mlrsSegArrows');
+      if (segArrowsEl) segArrowsEl.onchange = (e) => {
+        const p = ensurePad();
+        p.sliderArrows = e.target.value || 'chevron';
+        if (p.sliderArrows === 'factory') delete p.customTrack;
+        else p.customTrack = true;
+        refreshStageOnly();
+      };
+
       const segMaxEl = backdrop.querySelector('#mlrsSegMax');
       if (segMaxEl) segMaxEl.oninput = (e) => {
         const p = ensurePad();
@@ -1199,8 +1741,30 @@
       const pScaleEl = backdrop.querySelector('#mlrsPanelFontScale');
       if (pScaleEl) pScaleEl.oninput = (e) => { draft.fontScale = Math.max(65, Math.min(145, Number(e.target.value || 100))); refreshStageOnly(); };
 
+            backdrop.querySelectorAll('[data-slot-mode]').forEach(b => {
+        b.onclick = () => {
+          const mVal = b.getAttribute('data-slot-mode');
+          const p = ensurePad();
+          if (mVal === 'slider') {
+            p.segmentMode = 'slider';
+            if (p.sliderMin === undefined) p.sliderMin = 0;
+            if (p.sliderMax === undefined) p.sliderMax = 100;
+            if (p.multifunc) p.multifunc.enabled = false;
+          } else if (mVal === 'multistep') {
+            p.segmentMode = 'button';
+            p.multifunc = Object.assign({ steps: 5, unit: 'Spd' }, p.multifunc || {}, { enabled: true });
+          } else {
+            p.segmentMode = 'button';
+            if (p.multifunc) p.multifunc.enabled = false;
+          }
+          renderModal();
+        };
+      });
+      const iconEndEl = backdrop.querySelector('#mlrsPadIconEnd');
+      if (iconEndEl) iconEndEl.onchange = (e) => { ensurePad().iconEnd = e.target.value || 'none'; refreshStageOnly(); };
+
       const iconPosEl = backdrop.querySelector('#mlrsPadIconPos');
-      if (iconPosEl) iconPosEl.onchange = (e) => { ensurePad().iconPos = e.target.value || 'top'; refreshStageOnly(); };
+      if (iconPosEl) iconPosEl.onchange = (e) => { ensurePad().iconPos = e.target.value || 'left'; renderModal(); };
       const padFontEl = backdrop.querySelector('#mlrsPadFont');
       if (padFontEl) padFontEl.onchange = (e) => { const p = ensurePad(); if (e.target.value) p.fontFamily = e.target.value; else delete p.fontFamily; refreshStageOnly(); };
       const padScaleEl = backdrop.querySelector('#mlrsPadFontScale');
@@ -1208,7 +1772,7 @@
 
       backdrop.querySelector('#mlrsPadLabel').oninput = (e) => { const p = ensurePad(); p.label = e.target.value; syncLabelToTouchZone(selectedPadKey, e.target.value); refreshStageOnly(); };
       backdrop.querySelector('#mlrsPadSub').oninput = (e) => { const p = ensurePad(); p.sublabel = e.target.value; refreshStageOnly(); };
-      backdrop.querySelector('#mlrsMfChk').onchange = (e) => {
+      const mfChkLegacy = backdrop.querySelector('#mlrsMfChk'); if (mfChkLegacy) mfChkLegacy.onchange = (e) => {
         const p = ensurePad();
         p.multifunc = Object.assign({ steps: 6, unit: 'Spd' }, p.multifunc || {}, { enabled: e.target.checked });
         renderModal();
@@ -1253,8 +1817,116 @@
         downloadTextFile(fName, JSON.stringify(podObj, null, 2), 'application/json', { hubBase });
       };
 
+            // Background Graphic Upload, Fit, Zoom, Pan & Frosted Keycap Alpha handlers
+      const bgFileInp = backdrop.querySelector('#mlrsBgImgFile');
+      const bgPickBtn = backdrop.querySelector('#mlrsBgImgPickBtn');
+      if (bgPickBtn && bgFileInp) {
+        bgPickBtn.onclick = () => bgFileInp.click();
+        bgFileInp.onchange = async (ev) => {
+          const f = ev.target.files && ev.target.files[0];
+          if (!f) return;
+          bgPickBtn.textContent = '⏳ Loading…';
+          try {
+            const dUrl = await compressImageFileToDataUrl(f, 880);
+            draft.bgImage = Object.assign({ fit: 'cover', scale: 100, x: 0, y: 0, opacity: 88, padAlpha: 72 }, draft.bgImage || {}, {
+              dataUrl: dUrl,
+              name: f.name || 'custom_graphic'
+            });
+            lastTestReadout = `Loaded background graphic "${f.name}" — adjust Zoom, Pan & Button Backing opacity on the left!`;
+            renderModal();
+          } catch (err) {
+            bgPickBtn.textContent = '+ Upload Image';
+            alert('Could not load image: ' + err);
+          }
+        };
+      }
+      const bgClearBtn = backdrop.querySelector('#mlrsBgImgClearBtn');
+      if (bgClearBtn) bgClearBtn.onclick = () => { delete draft.bgImage; renderModal(); };
+      const bgFitEl = backdrop.querySelector('#mlrsBgImgFit');
+      if (bgFitEl) bgFitEl.onchange = (e) => { if (draft.bgImage) { draft.bgImage.fit = e.target.value; refreshStageOnly(); } };
+      [['#mlrsBgImgScale', 'scale', 'Zoom'], ['#mlrsBgImgX', 'x', 'Pan X'], ['#mlrsBgImgY', 'y', 'Pan Y'], ['#mlrsBgImgOp', 'opacity', 'Image Opacity'], ['#mlrsBgImgPadAlpha', 'padAlpha', 'Button Backing']].forEach(([sel, prop, lblTxt]) => {
+        const el = backdrop.querySelector(sel);
+        if (el) el.oninput = (e) => {
+          if (!draft.bgImage) return;
+          draft.bgImage[prop] = Number(e.target.value);
+          const lbl = el.previousElementSibling;
+          if (lbl) lbl.textContent = `${lblTxt} (${draft.bgImage[prop]}%)`;
+          refreshStageOnly();
+        };
+      });
+
+      // Glow Everything / Clear Glow handlers (safe idempotent bind)
+      const glowAllB = backdrop.querySelector('#mlrsGlowAllBtn');
+      if (glowAllB && !glowAllB.onclick) glowAllB.onclick = () => { draft.luminous = { enabled: true, border: true, header: true, slots: true }; luminousPreview = true; renderModal(); };
+      const glowNoneB = backdrop.querySelector('#mlrsGlowNoneBtn');
+      if (glowNoneB && !glowNoneB.onclick) glowNoneB.onclick = () => { draft.luminous = { enabled: false, border: false, header: false, slots: false }; Object.values(draft.pads || {}).forEach(p => { if (p) delete p.luminous; }); renderModal(); };
+
+      // Save & Resume Work-in-Progress (WIP) Draft handlers
+      const saveWipBtn = backdrop.querySelector('#mlrsSaveWipBtn');
+      if (saveWipBtn) {
+        saveWipBtn.onclick = () => {
+          const cleanName = (customModelName || '').trim() || `${baseModel.id} Draft`;
+          const dId = currentDraftId || `WIP_${baseModel.id}_${Date.now().toString(36).toUpperCase()}`;
+          currentDraftId = dId;
+          const now = new Date();
+          const savedAtShort = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const res = saveWipDraftRecord({
+            id: dId,
+            name: cleanName,
+            baseModelId: baseModel.id,
+            hexId,
+            facia: JSON.parse(JSON.stringify(draft)),
+            touchZones: JSON.parse(JSON.stringify(tz)),
+            selectedPadKey,
+            savedAt: now.toISOString(),
+            savedAtShort
+          });
+          if (res.ok) {
+            lastTestReadout = `📝 Saved WIP Draft "${cleanName}" (${savedAtShort}) — safe to close and resume anytime from the top bar!`;
+            renderModal();
+            const freshBtn = backdrop.querySelector('#mlrsSaveWipBtn');
+            if (freshBtn) {
+              freshBtn.textContent = `✅ Draft Saved (${savedAtShort})!`;
+              freshBtn.style.background = '#059669';
+              freshBtn.style.color = '#ffffff';
+              freshBtn.style.borderColor = '#059669';
+              setTimeout(() => { if (freshBtn.isConnected) { freshBtn.textContent = '📝 Save WIP Draft'; freshBtn.style.background = ''; freshBtn.style.color = '#0284c7'; freshBtn.style.borderColor = '#0284c7'; } }, 2400);
+            }
+          } else {
+            alert('Could not save draft locally: ' + res.error);
+          }
+        };
+      }
+      const resumeWipSel = backdrop.querySelector('#mlrsResumeWipSel');
+      if (resumeWipSel) {
+        resumeWipSel.onchange = (e) => {
+          const pickId = e.target.value;
+          const found = loadWipDrafts().find(d => d.id === pickId);
+          if (!found) return;
+          currentDraftId = found.id;
+          customModelName = found.name || customModelName;
+          tz = normalizeTouchZones(found.touchZones);
+          Object.keys(draft).forEach(k => delete draft[k]);
+          Object.assign(draft, JSON.parse(JSON.stringify(found.facia || { enabled: true, pads: {} })));
+          selectedPadKey = found.selectedPadKey || selectedPadKey;
+          step1Confirmed = true;
+          lastTestReadout = `📂 Loaded WIP Draft "${found.name}" (${found.savedAtShort || 'saved'})!`;
+          renderModal();
+        };
+      }
+      const delWipBtn = backdrop.querySelector('#mlrsDelWipBtn');
+      if (delWipBtn) {
+        delWipBtn.onclick = () => {
+          if (!currentDraftId) return;
+          deleteWipDraftRecord(currentDraftId);
+          currentDraftId = null;
+          lastTestReadout = 'Removed saved WIP draft.';
+          renderModal();
+        };
+      }
+
       const nameInp = backdrop.querySelector('#mlrsCustomModelName');
-      if (nameInp) nameInp.oninput = (e) => { customModelName = e.target.value; };
+      if (nameInp) nameInp.oninput = (e) => { customModelName = e.target.value; step1Confirmed = Boolean(customModelName.trim().length >= 2); if (typeof refreshTourState === 'function') refreshTourState(); };
       const bindChk = backdrop.querySelector('#mlrsBindNowChk');
       if (bindChk) bindChk.onchange = (e) => { bindCurrentRemote = e.target.checked; };
 
@@ -1269,17 +1941,24 @@
           facia: draft,
           touch_zones: tz
         };
-        const res = await fetch(`${hubBase}/api/remotes/custom_models`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        await Cat.syncCustomModelsFromHub(hubBase);
         if (typeof opts.onSaveCustomModel === 'function') {
+          // Host integration (Home Assistant / Homebridge) handles persistence & Hub proxy!
+          if (hubBase) {
+            fetch(`${hubBase}/api/remotes/custom_models`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            }).then(() => Cat.syncCustomModelsFromHub(hubBase)).catch(() => {});
+          }
+          if (Cat.upsertCustomModel) Cat.upsertCustomModel(payload);
           await opts.onSaveCustomModel({ customModel: payload, bindNow: bindCurrentRemote, calibration: cal, touchZones: tz, facia: draft });
-        } else if (bindCurrentRemote && typeof opts.onSave === 'function') {
-          await opts.onSave(draft, cal, tz, targetId);
+        } else {
+          const res = await fetch(`${hubBase}/api/remotes/custom_models`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await Cat.syncCustomModelsFromHub(hubBase);
+          if (bindCurrentRemote && typeof opts.onSave === 'function') {
+            await opts.onSave(draft, cal, tz, targetId);
+          }
         }
         backdrop.remove();
       };
@@ -1647,54 +2326,663 @@
   function mountShowcaseTour(containerEl, opts) {
     injectStudioStyles(containerEl);
     if (!containerEl || !opts || !Array.isArray(opts.steps) || !opts.steps.length) return null;
+    const scopeRoot = opts.scopeEl || document;
     const storageKey = `mlrs_tour_${opts.tourId || 'default'}`;
     let idx = Number(localStorage.getItem(storageKey + '_idx') || 0);
     if (idx < 0 || idx >= opts.steps.length) idx = 0;
     let hidden = localStorage.getItem(storageKey + '_hide') === '1';
 
-    function render() {
+    function clearHighlights() {
+      scopeRoot.querySelectorAll('.mlrs-tour-focus').forEach(el => el.classList.remove('mlrs-tour-focus'));
+    }
+
+    function applyHighlight(step) {
+      clearHighlights();
+      if (hidden || !step || !step.targetSelector) return;
+      const target = scopeRoot.querySelector(step.targetSelector);
+      if (target) {
+        target.classList.add('mlrs-tour-focus');
+        if (opts.autoScroll !== false && typeof target.scrollIntoView === 'function') {
+          try { target.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
+        }
+      }
+    }
+
+    function render(skipScroll) {
       if (hidden) {
-        containerEl.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="mlrs-tour-reopen" data-tour="open">💡 Guided Showcase Tour (${opts.steps.length} Interactive Tips)</button></div>`;
+        clearHighlights();
+        containerEl.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="mlrs-tour-reopen" data-tour="open">🧭 Guided Build Path (${opts.steps.length} Steps: Bare Remote → Device-Linked Stencil)</button></div>`;
         const ob = containerEl.querySelector('[data-tour="open"]');
         if (ob) ob.onclick = () => { hidden = false; localStorage.setItem(storageKey + '_hide', '0'); render(); };
         return;
       }
       const step = opts.steps[idx];
-      const dotsHtml = opts.steps.map((_, di) => `<span class="mlrs-tour-dot ${di === idx ? 'on' : ''}"></span>`).join('');
+      const hasValidator = typeof step.isComplete === 'function';
+      const done = hasValidator ? Boolean(step.isComplete()) : false;
+      const dotsHtml = opts.steps.map((st, di) => {
+        const stDone = typeof st.isComplete === 'function' && st.isComplete();
+        return `<span class="mlrs-tour-dot ${di === idx ? 'on' : ''}" style="${stDone && di !== idx ? 'background:#10b981;opacity:0.85' : ''}"></span>`;
+      }).join('');
+
+      const statusBadge = hasValidator
+        ? (done
+            ? `<span class="mlrs-tour-done-badge">✅ Step Validated — Click Next ▶</span>`
+            : `<span class="mlrs-tour-pending-badge">🎯 Highlighted Area Active: ${step.hintShort || 'Complete highlighted control'}</span>`)
+        : '';
+
       containerEl.innerHTML = `
-        <div class="mlrs-tour-bar">
-          <div class="mlrs-tour-left">
-            <div class="mlrs-tour-icon">💡</div>
-            <div style="min-width:0">
-              <div>
-                <span class="mlrs-tour-step-badge">Guided Tip ${idx + 1} of ${opts.steps.length}</span>
-                <strong style="font-size:13px">${step.title}</strong>
-                <span class="mlrs-tour-dots">${dotsHtml}</span>
+        <div class="mlrs-tour-bar" style="${done ? 'border-color:#86efac;background:linear-gradient(90deg,rgba(220,252,231,0.45),var(--mlrs-bg))' : ''}">
+          <div style="display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1">
+            <span style="font-size:18px;line-height:1;margin-top:2px">${done ? '✅' : '🧭'}</span>
+            <div style="min-width:0;flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">
+                <span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--mlrs-primary)">GUIDED PATH ${idx + 1} OF ${opts.steps.length}</span>
+                <span style="font-size:12.5px;font-weight:700;color:var(--mlrs-fg)">${step.title}</span>
+                <span style="display:inline-flex;gap:4px;align-items:center">${dotsHtml}</span>
+                ${statusBadge}
               </div>
-              <div style="margin-top:2px;opacity:0.88;font-size:12px">${step.body}</div>
+              <div style="font-size:11.5px;color:var(--mlrs-muted-fg);line-height:1.38">${step.body}</div>
             </div>
           </div>
-          <div class="mlrs-tour-nav">
-            <button type="button" class="mlrs-tour-btn" data-tour="prev">◀ Prev</button>
-            ${step.actionLabel ? `<button type="button" class="mlrs-tour-btn demo" data-tour="demo">✨ ${step.actionLabel}</button>` : ''}
-            <button type="button" class="mlrs-tour-btn" data-tour="next">Next ▶</button>
-            <button type="button" class="mlrs-tour-btn" data-tour="hide" title="Minimize Tour Frame">✕ Hide</button>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0">
+            <button type="button" class="mlrs-btn" data-tour="prev" style="padding:4px 9px;font-size:11.5px">◀ Prev</button>
+            ${step.actionLabel ? `<button type="button" class="mlrs-btn ${done ? '' : 'primary'}" data-tour="act" style="padding:4px 10px;font-size:11.5px">${step.actionLabel}</button>` : ''}
+            <button type="button" class="mlrs-btn ${done ? 'primary' : ''}" data-tour="next" style="padding:4px 10px;font-size:11.5px">${idx === opts.steps.length - 1 ? 'Finish ✓' : 'Next ▶'}</button>
+            <button type="button" class="mlrs-btn" data-tour="hide" style="padding:4px 8px;font-size:11.5px">✕ Hide</button>
           </div>
-        </div>
-      `;
-      containerEl.querySelector('[data-tour="prev"]').onclick = () => { idx = (idx - 1 + opts.steps.length) % opts.steps.length; localStorage.setItem(storageKey + '_idx', String(idx)); render(); };
-      containerEl.querySelector('[data-tour="next"]').onclick = () => { idx = (idx + 1) % opts.steps.length; localStorage.setItem(storageKey + '_idx', String(idx)); render(); };
-      containerEl.querySelector('[data-tour="hide"]').onclick = () => { hidden = true; localStorage.setItem(storageKey + '_hide', '1'); render(); };
-      const db = containerEl.querySelector('[data-tour="demo"]');
-      if (db && typeof step.onAction === 'function') db.onclick = () => step.onAction();
+        </div>`;
+
+      if (!skipScroll) applyHighlight(step);
+      else {
+        clearHighlights();
+        const t = step.targetSelector ? scopeRoot.querySelector(step.targetSelector) : null;
+        if (t) t.classList.add('mlrs-tour-focus');
+      }
+
+      containerEl.querySelector('[data-tour="prev"]').onclick = () => {
+        idx = (idx - 1 + opts.steps.length) % opts.steps.length;
+        localStorage.setItem(storageKey + '_idx', String(idx));
+        if (opts.steps[idx].onEnter) opts.steps[idx].onEnter();
+        render();
+      };
+      containerEl.querySelector('[data-tour="next"]').onclick = () => {
+        if (idx === opts.steps.length - 1) {
+          hidden = true;
+          localStorage.setItem(storageKey + '_hide', '1');
+          render();
+          return;
+        }
+        idx = (idx + 1) % opts.steps.length;
+        localStorage.setItem(storageKey + '_idx', String(idx));
+        if (opts.steps[idx].onEnter) opts.steps[idx].onEnter();
+        render();
+      };
+      containerEl.querySelector('[data-tour="hide"]').onclick = () => {
+        hidden = true;
+        localStorage.setItem(storageKey + '_hide', '1');
+        render();
+      };
+      const actBtn = containerEl.querySelector('[data-tour="act"]');
+      if (actBtn && typeof step.onAction === 'function') {
+        actBtn.onclick = () => { step.onAction(); };
+      }
     }
+
     render();
-    return { show: () => { hidden = false; localStorage.setItem(storageKey + '_hide', '0'); render(); } };
+    return { refresh: () => render(true), clearHighlights };
+  }
+
+  // ============================================================================
+  // 4. SMART DEVICE-TO-REMOTE RECOMMENDER & AUTO-BUILDER WIZARD
+  // ============================================================================
+  function inferDeviceProfile(dev) {
+    const dom = String(dev.domain || 'light').toLowerCase();
+    const nm = String(dev.name || dev.entity_id || 'Device').trim();
+    const low = nm.toLowerCase();
+    // Pick best icon + preferred interaction style ('slider' | 'multistep' | 'button')
+    if (dom === 'cover' || /blind|shade|shutter|roller|awning/.test(low)) {
+      const isCurt = /curtain|drape|sheer/.test(low);
+      return { kind: 'slider', icon: isCurt ? 'curtains' : 'blinds', iconEnd: 'sun', sMin: isCurt ? 0 : 100, sMax: isCurt ? 100 : 0, arrows: 'chevron', badge: 'Slider (100\u21920%)' };
+    }
+    if (dom === 'fan' || /\bfan\b|ventil|exhaust/.test(low)) {
+      return { kind: 'multistep', icon: /exhaust|vent/.test(low) ? 'extractor' : 'fan', steps: 6, unit: 'Spd', badge: 'Step 1\u20136 + Hold' };
+    }
+    if (dom === 'climate' || /\bac\b|aircon|split|climate|heat|hvac/.test(low)) {
+      return { kind: 'multistep', icon: /heat|towel/.test(low) ? 'heater' : 'ac', steps: 5, unit: 'Temp', badge: 'Step 1\u20135 + Hold' };
+    }
+    if (dom === 'media_player' || /sonos|speaker|tv|cinema|audio|amp/.test(low)) {
+      const isTv = /\btv\b|cinema|projector/.test(low);
+      return isTv
+        ? { kind: 'button', icon: 'tv', badge: 'Tap Toggle' }
+        : { kind: 'slider', icon: 'speaker', iconEnd: 'music', sMin: 0, sMax: 80, arrows: 'dots', badge: 'Vol Slider (0\u219280%)' };
+    }
+    if (dom === 'scene' || dom === 'script') {
+      return { kind: 'button', icon: /night|sleep/.test(low) ? 'moon' : (/morning|coffee/.test(low) ? 'coffee' : 'sparkles'), badge: 'Scene Tap' };
+    }
+    if (dom === 'light') {
+      const ic = /strip|cove|led/.test(low) ? 'strip' : (/pendant|chandelier/.test(low) ? 'pendant' : (/lamp|bed/.test(low) ? 'lamp' : (/downlight|spot/.test(low) ? 'downlight' : 'bulb')));
+      const dimmable = dev.dimmable !== false;
+      return dimmable
+        ? { kind: 'slider_or_zone', icon: ic, iconEnd: 'sun', sMin: 5, sMax: 100, arrows: 'dots', badge: 'Dimmer / Zone' }
+        : { kind: 'button', icon: ic, badge: 'Light Toggle' };
+    }
+    const roomIco = /garag/.test(low) ? 'garage' : (/garden|patio|lawn/.test(low) ? 'garden' : (/lock|away/.test(low) ? 'lock' : 'power'));
+    return { kind: 'button', icon: roomIco, badge: 'Tap Toggle' };
+  }
+
+  function cleanShortLabel(rawName) {
+    return String(rawName || 'Device')
+      .replace(/^\[Virtual\]\s*/i, '')
+      .replace(/^MiBoxer 3D Smart Home Twin\s*/i, '')
+      .replace(/\b(Z\d+|Light|Switch|Cover|Entity|Smart)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 11) || 'Device';
+  }
+
+  function synthesizeRemoteForDevices(modelId, selectedDevs) {
+    const Cat = root.MiBoxerCatalog;
+    const baseModel = Cat.MODELS.find(m => m.id === modelId && !m.isCustom) || Cat.MODELS[0];
+    const bp = Cat.getPanelBlueprint(baseModel);
+    const dims = Cat.getPhysicalDims(baseModel);
+    const tz = normalizeTouchZones(null);
+    const pads = {};
+    const bindings = [];
+
+    const sliders = [];
+    const stepsAndBtns = [];
+    selectedDevs.forEach(d => {
+      const prof = Object.assign({}, inferDeviceProfile(d), d.overrideKind ? { kind: d.overrideKind } : {});
+      const item = { dev: d, prof, shortLbl: cleanShortLabel(d.name) };
+      if (prof.kind === 'slider') sliders.push(item);
+      else if (prof.kind === 'slider_or_zone') {
+        // Put up to 3 primary dimmable lights onto sliders if space allows, rest onto zone rockers/buttons
+        if (sliders.length < 3 && selectedDevs.length <= 8) sliders.push(Object.assign({}, item, { prof: Object.assign({}, prof, { kind: 'slider' }) }));
+        else stepsAndBtns.push(item);
+      } else {
+        stepsAndBtns.push(item);
+      }
+    });
+
+    // Discover physical surfaces on this candidate model
+    const ringSlot = bp.slots.find(s => s.surf === 'hue_ring' && s.type === 'ring');
+    const hHueSlot = bp.slots.find(s => s.surf === 'hue_ring' && s.type === 'hbar');
+    const barSlots = bp.slots.filter(s => s.surf && s.surf !== 'hue_ring');
+    const allSegSurfaces = [];
+    if (ringSlot) allSegSurfaces.push({ surf: 'hue_ring', pref: 'hue_seg_', maxSlider: 4, maxBtn: 6, isRing: true });
+    if (hHueSlot) allSegSurfaces.push({ surf: 'hue_ring', pref: 'hue_seg_', maxSlider: 3, maxBtn: 4, isRing: false });
+    barSlots.forEach(bs => {
+      const pref = bs.surf.split('_')[0] + '_seg_';
+      allSegSurfaces.push({ surf: bs.surf, pref, maxSlider: 2, maxBtn: 4, isRing: false, slotKey: bs.key });
+    });
+
+    const discreteSlots = bp.slots.filter(s => !s.surf && s.key !== 'btn_on' && s.key !== 'btn_off');
+    const onOffSlots = bp.slots.filter(s => s.key === 'btn_on' || s.key === 'btn_off');
+
+    // Allocate sliders first across unsplit bars (if 1 slider fits a bar cleanly) or segmented rings/bars!
+    const sliderQueue = sliders.slice();
+    const btnQueue = stepsAndBtns.slice();
+
+    allSegSurfaces.forEach(sf => {
+      if (!sliderQueue.length && btnQueue.length <= discreteSlots.length) return;
+      if (sliderQueue.length >= 1 && !sf.isRing && sliderQueue.length === 1 && sf.slotKey) {
+        // Use full unsplit bar as a sleek dedicated Custom Stencil Slider!
+        const it = sliderQueue.shift();
+        pads[sf.slotKey] = {
+          customTrack: true, segmentMode: 'slider',
+          label: it.shortLbl, sublabel: `${it.prof.sMin ?? 0}\u2192${it.prof.sMax ?? 100}%`,
+          icon: it.prof.icon, iconEnd: it.prof.iconEnd || 'sun', iconPos: 'both',
+          sliderMin: it.prof.sMin ?? 0, sliderMax: it.prof.sMax ?? 100,
+          sliderPitch: 2.0, sliderArrows: it.prof.arrows || 'chevron', luminous: true
+        };
+        bindings.push({ slot: sf.slotKey, gesture: 'slider', entity_id: it.dev.entity_id, label: it.dev.name });
+        return;
+      }
+      // Otherwise segment this ring/bar to hold sliders + overflow step/toggle buttons
+      const wantFromSliders = Math.min(sf.maxSlider, sliderQueue.length);
+      const overflowBtns = Math.max(0, btnQueue.length - discreteSlots.length);
+      const wantTotal = Math.min(sf.maxBtn, Math.max(wantFromSliders > 0 ? Math.max(2, wantFromSliders) : 0, wantFromSliders + Math.min(sf.maxBtn - wantFromSliders, overflowBtns)));
+      if (wantTotal >= 2) {
+        tz[sf.surf].enabled = true;
+        tz[sf.surf].segments = wantTotal;
+        if (sf.isRing) tz[sf.surf].offset_deg = wantTotal === 4 ? -45 : -30;
+        tz[sf.surf].labels = [];
+        for (let i = 0; i < wantTotal; i++) {
+          const sKey = `${sf.pref}${i + 1}`;
+          const it = sliderQueue.shift() || btnQueue.shift();
+          if (!it) {
+            pads[sKey] = { style: 'blank' };
+            tz[sf.surf].labels.push('');
+            continue;
+          }
+          tz[sf.surf].labels.push(it.shortLbl);
+          if (it.prof.kind === 'slider') {
+            pads[sKey] = {
+              segmentMode: 'slider', label: it.shortLbl,
+              sublabel: `${it.prof.sMin ?? 0}\u2192${it.prof.sMax ?? 100}%`,
+              icon: it.prof.icon, iconEnd: it.prof.iconEnd || 'sun', iconPos: 'both',
+              sliderMin: it.prof.sMin ?? 0, sliderMax: it.prof.sMax ?? 100,
+              sliderPitch: 2.1, sliderArrows: it.prof.arrows || 'chevron', luminous: i === 0
+            };
+            bindings.push({ slot: sKey, gesture: 'slider', entity_id: it.dev.entity_id, label: it.dev.name });
+          } else if (it.prof.kind === 'multistep') {
+            pads[sKey] = {
+              icon: it.prof.icon, iconPos: sf.isRing ? 'left' : 'top', label: it.shortLbl,
+              sublabel: `1-${it.prof.steps || 5} \u2022 Hold`,
+              multifunc: { enabled: true, steps: it.prof.steps || 5, unit: it.prof.unit || 'Spd' }
+            };
+            bindings.push({ slot: sKey, gesture: 'single_tap', entity_id: it.dev.entity_id, label: it.dev.name });
+          } else {
+            pads[sKey] = { icon: it.prof.icon, iconPos: sf.isRing ? 'left' : 'top', label: it.shortLbl };
+            bindings.push({ slot: sKey, gesture: 'single_tap', entity_id: it.dev.entity_id, label: it.dev.name });
+          }
+        }
+      }
+    });
+
+    // Any remaining slider items degrade gracefully to multi-step pads on discrete buttons
+    const remAll = sliderQueue.concat(btnQueue);
+    const allBtnTargets = discreteSlots.concat(onOffSlots);
+    if (onOffSlots.find(s => s.key === 'btn_on') && remAll.length <= discreteSlots.length) {
+      pads.btn_on = { icon: 'power', label: 'All ON', luminous: true };
+    }
+    if (onOffSlots.find(s => s.key === 'btn_off') && remAll.length <= discreteSlots.length) {
+      pads.btn_off = { icon: 'moon', label: 'All OFF' };
+    }
+
+    allBtnTargets.forEach(sl => {
+      if (pads[sl.key]) return;
+      const it = remAll.shift();
+      if (!it) {
+        // Mask unused extra buttons cleanly so the stencil looks bespoke!
+        pads[sl.key] = { style: 'blank' };
+        return;
+      }
+      if (it.prof.kind === 'multistep' || it.prof.kind === 'slider') {
+        pads[sl.key] = {
+          icon: it.prof.icon, label: it.shortLbl,
+          multifunc: { enabled: true, steps: it.prof.steps || 5, unit: it.prof.unit || 'Lvl' }
+        };
+      } else {
+        pads[sl.key] = { icon: it.prof.icon, label: it.shortLbl };
+      }
+      bindings.push({ slot: sl.key, gesture: 'single_tap', entity_id: it.dev.entity_id, label: it.dev.name });
+    });
+
+    const unplacedCount = remAll.length;
+    const totalCap = allBtnTargets.length + allSegSurfaces.reduce((acc, s) => acc + s.maxBtn, 0);
+    // Score fit quality (0..99)
+    let score = 96;
+    if (unplacedCount > 0) score -= unplacedCount * 18;
+    const ratio = selectedDevs.length / Math.max(1, discreteSlots.length + allSegSurfaces.length * 3);
+    if (ratio < 0.32) score -= Math.round((0.32 - ratio) * 45); // Penalize oversized remote for 1-2 devices
+    if (sliders.length > 0 && allSegSurfaces.length === 0) score -= 25;
+    if (sliders.length >= 3 && baseModel.id === 'B8') score += 5;
+    if (selectedDevs.length <= 5 && (baseModel.id === 'B0' || baseModel.id === 'B3' || baseModel.id === 'K6')) score += 4;
+    score = Math.max(35, Math.min(99, score));
+
+    const facia = {
+      v: 2, enabled: true,
+      theme: baseModel.finish === 'black' ? 'matte_black' : 'pure_white',
+      fontFamily: 'geometric', fontScale: 100,
+      panelTitle: `${selectedDevs.length}-DEVICE SMART PANEL`,
+      defaultPadStyle: 'keycap', showLedPinhole: true, hideLogo: true,
+      luminous: { enabled: true, border: true, header: true, slots: false },
+      pads
+    };
+
+    const summaryReason = unplacedCount === 0
+      ? `Fits all ${selectedDevs.length} selected device(s) (${sliders.length} variable slider${sliders.length === 1 ? '' : 's'} + ${selectedDevs.length - sliders.length} tap/step pad${selectedDevs.length - sliders.length === 1 ? '' : 's'}) on ${dims.width_mm}\u00d7${dims.height_mm} mm ${dims.form_factor || 'glass'}.`
+      : `Places ${selectedDevs.length - unplacedCount} of ${selectedDevs.length} devices (${unplacedCount} overflow \u2014 pick B8 or FUT089 for higher capacity).`;
+
+    return { model: baseModel, dims, score, unplacedCount, totalCap, tz, facia, bindings, summaryReason };
+  }
+
+  function openDeviceRecommenderWizard(opts) {
+    injectStudioStyles();
+    const o = opts || {};
+    const Cat = root.MiBoxerCatalog;
+
+    // Seed device list from HA / Homebridge entities (or rich starter catalog if standalone/empty)
+    let rawDevs = Array.isArray(o.devices) ? o.devices.slice() : [];
+    if (!rawDevs.length) {
+      rawDevs = [
+        { entity_id: 'cover.living_roller_blinds', name: 'Living Blinds', domain: 'cover' },
+        { entity_id: 'cover.sheer_curtains', name: 'Sheer Curtains', domain: 'cover' },
+        { entity_id: 'fan.ceiling_fan', name: 'Ceiling Fan', domain: 'fan' },
+        { entity_id: 'climate.split_system_ac', name: 'Split AC', domain: 'climate' },
+        { entity_id: 'light.lounge_downlights', name: 'Lounge Lights', domain: 'light', dimmable: true },
+        { entity_id: 'light.kitchen_island', name: 'Kitchen Pendant', domain: 'light', dimmable: true },
+        { entity_id: 'media_player.living_sonos', name: 'Living Sonos', domain: 'media_player' },
+        { entity_id: 'scene.movie_night', name: 'Cinema Scene', domain: 'scene' }
+      ];
+    }
+
+    const selectedMap = new Map();
+    // Pre-select up to 5 diverse sample devices on first open so recommendations render live immediately!
+    const seenDom = new Set();
+    rawDevs.forEach(d => {
+      if (selectedMap.size < 5 && !seenDom.has(d.domain)) {
+        seenDom.add(d.domain);
+        selectedMap.set(d.entity_id, Object.assign({}, d));
+      }
+    });
+    if (selectedMap.size < 3) {
+      rawDevs.slice(0, 4).forEach(d => selectedMap.set(d.entity_id, Object.assign({}, d)));
+    }
+
+    let filterDom = 'all';
+    let searchTxt = '';
+    const candidateModelIds = ['B8', 'B0', 'B4', 'B3', 'U3', 'M4', 'K6', 'FUT089'];
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'mlrs-modal-backdrop' + (isHostDark() ? ' mlrs-dark' : '');
+
+    function renderWiz() {
+      const selArr = Array.from(selectedMap.values());
+      const recs = candidateModelIds
+        .map(mid => synthesizeRemoteForDevices(mid, selArr))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      const domains = ['all', ...Array.from(new Set(rawDevs.map(d => d.domain)))];
+      const filteredDevs = rawDevs.filter(d => {
+        if (filterDom !== 'all' && d.domain !== filterDom) return false;
+        if (searchTxt && !`${d.name} ${d.entity_id} ${d.domain}`.toLowerCase().includes(searchTxt.toLowerCase())) return false;
+        return true;
+      });
+
+      backdrop.innerHTML = `
+        <div class="mlrs-modal" style="max-width:1440px;height:90vh" onclick="event.stopPropagation()">
+          <div class="mlrs-topbar">
+            <div>
+              <div style="font-size:16px;font-weight:800">\uD83E\uDE84 Smart Device-to-Remote Recommender &amp; Auto-Builder</div>
+              <div style="font-size:12px;color:var(--mlrs-muted-fg);margin-top:2px">Tick the Home Assistant / Homebridge devices you want on one remote \u2014 we rank the best-fit MiBoxer hardware &amp; pre-build your custom stencil!</div>
+            </div>
+            <button type="button" class="mlrs-btn" id="mlrsWizClose">\u2715 Close</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(330px, 410px) 1fr;flex:1;min-height:0;overflow:hidden">
+            <!-- LEFT: Device Picker & Custom Slot Adder -->
+            <div class="mlrs-col" style="display:flex;flex-direction:column;gap:8px">
+              <div class="mlrs-sec-title" style="margin:0">1. Select Devices to Put on One Remote (${selArr.length} chosen)</div>
+              <div style="display:flex;gap:6px">
+                <input type="text" class="mlrs-input" id="mlrsWizSearch" placeholder="Search lights, blinds, fans, AC, Sonos\u2026" value="${searchTxt.replace(/"/g, '&quot;')}"/>
+                <button type="button" class="mlrs-btn" id="mlrsWizClearSel" style="white-space:nowrap;padding:4px 8px;font-size:11px">Clear</button>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                ${domains.map(dm => `<button type="button" class="mlrs-btn ${filterDom === dm ? 'active-tab' : ''}" data-wiz-dom="${dm}" style="padding:3px 8px;font-size:11px;text-transform:capitalize">${dm === 'all' ? 'All (' + rawDevs.length + ')' : dm}</button>`).join('')}
+              </div>
+
+              <div style="flex:1;min-height:160px;overflow-y:auto;border:1px solid var(--mlrs-border);border-radius:8px;padding:6px;background:var(--mlrs-muted)">
+                ${filteredDevs.slice(0, 80).map(d => {
+                  const checked = selectedMap.has(d.entity_id);
+                  const chosenObj = selectedMap.get(d.entity_id) || d;
+                  const prof = inferDeviceProfile(chosenObj);
+                  const effKind = chosenObj.overrideKind || (prof.kind === 'slider_or_zone' ? 'slider' : prof.kind);
+                  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 7px;margin-bottom:4px;border-radius:6px;background:var(--mlrs-bg);border:1px solid ${checked ? '#0284c7' : 'var(--mlrs-border)'}">
+                    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;min-width:0;flex:1;margin:0">
+                      <input type="checkbox" data-wiz-chk="${d.entity_id.replace(/"/g, '&quot;')}" ${checked ? 'checked' : ''}/>
+                      <span style="min-width:0;flex:1">
+                        <span style="display:block;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.name}</span>
+                        <span style="display:block;font-size:10px;color:var(--mlrs-muted-fg)">${d.domain} \u2022 ${d.entity_id}</span>
+                      </span>
+                    </label>
+                    ${checked ? `
+                      <select class="mlrs-select" data-wiz-kind="${d.entity_id.replace(/"/g, '&quot;')}" style="width:108px;padding:2px 5px;font-size:10.5px">
+                        <option value="slider" ${effKind === 'slider' ? 'selected' : ''}>\uD83C\uDF9A\uFE0F Slider</option>
+                        <option value="multistep" ${effKind === 'multistep' ? 'selected' : ''}>\uD83D\uDD22 Step Cycle</option>
+                        <option value="button" ${effKind === 'button' ? 'selected' : ''}>\uD83D\uDD18 Tap Button</option>
+                      </select>
+                    ` : `<span style="font-size:10px;color:var(--mlrs-muted-fg);white-space:nowrap">${prof.badge}</span>`}
+                  </div>`;
+                }).join('')}
+              </div>
+
+              <div class="mlrs-box-sub" style="margin:0">
+                <div style="font-size:11px;font-weight:700;margin-bottom:4px">Planning ahead? Add a custom device slot:</div>
+                <div style="display:flex;gap:5px">
+                  <input type="text" class="mlrs-input" id="mlrsWizCustomName" placeholder="e.g. Patio Pergola Louvres" style="padding:4px 7px;font-size:11.5px"/>
+                  <select class="mlrs-select" id="mlrsWizCustomDom" style="width:98px;padding:4px 5px;font-size:11px">
+                    <option value="cover">Blinds</option>
+                    <option value="light">Light</option>
+                    <option value="fan">Fan</option>
+                    <option value="climate">AC</option>
+                    <option value="media_player">Audio</option>
+                    <option value="scene">Scene</option>
+                  </select>
+                  <button type="button" class="mlrs-btn primary" id="mlrsWizAddCustom" style="padding:4px 9px;font-size:11.5px">+ Add</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Top 3 Ranked MiBoxer Remotes + Live Pre-Configured Stencil Previews -->
+            <div style="padding:14px 18px;overflow-y:auto;background:var(--mlrs-muted)">
+              <div class="mlrs-sec-title">2. Best-Fit MiBoxer Remotes &amp; Auto-Built Stencil Layouts (Click to Use or Edit)</div>
+              ${selArr.length === 0 ? `<div class="mlrs-box-sub" style="background:var(--mlrs-bg);padding:24px;text-align:center">Tick one or more devices on the left to generate ranked hardware &amp; stencil recommendations!</div>` : `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(290px, 1fr));gap:12px">
+                  ${recs.map((rc, rIdx) => {
+                    const svgHtml = Cat.renderCapacitiveStencilSvg(rc.model, {
+                      size: 'large', uid: `wiz_rec_${rIdx}`, facia: rc.facia, touchZones: rc.tz, activeZone: 1
+                    });
+                    return `<div style="background:var(--mlrs-bg);border:${rIdx === 0 ? '2px solid #0284c7' : '1px solid var(--mlrs-border)'};border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 3px 10px rgba(15,23,42,0.05)">
+                      <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">
+                          <span style="font-size:13.5px;font-weight:800">${rIdx === 0 ? '\uD83C\uDFC6 #1 Best Match: ' : '#' + (rIdx + 1) + ' '}MiBoxer ${rc.model.id}</span>
+                          <span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;background:${rIdx === 0 ? '#dcfce7' : '#e0f2fe'};color:${rIdx === 0 ? '#166534' : '#0369a1'}">${rc.score}% Fit</span>
+                        </div>
+                        <div style="font-size:11px;color:var(--mlrs-muted-fg);margin-bottom:8px;line-height:1.38">${rc.summaryReason}</div>
+                        <div style="display:flex;align-items:center;justify-content:center;background:var(--mlrs-muted);border:1px solid var(--mlrs-border);border-radius:9px;padding:10px;height:275px;overflow:hidden">
+                          <div style="height:100%;display:flex;align-items:center;justify-content:center">${svgHtml.replace(/<svg /, '<svg style="max-height:252px;width:auto;max-width:100%" ')}</div>
+                        </div>
+                        <div style="margin-top:8px;font-size:10.5px;color:var(--mlrs-muted-fg)">
+                          <b>Auto-mapped (${rc.bindings.length}):</b> ${rc.bindings.slice(0, 6).map(b => `<code style="background:var(--mlrs-muted);padding:1px 4px;border-radius:3px">${b.slot}\u2192${cleanShortLabel(b.label)}</code>`).join(' ')}${rc.bindings.length > 6 ? ` +${rc.bindings.length - 6} more` : ''}
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+                        <button type="button" class="mlrs-btn primary" data-wiz-edit="${rIdx}" style="flex:1;justify-content:center;font-size:11.5px">\uD83C\uDFA8 Open &amp; Edit in Stencil Studio</button>
+                        <button type="button" class="mlrs-btn" data-wiz-apply="${rIdx}" style="justify-content:center;font-size:11.5px;border-color:#059669;color:#059669;font-weight:700">\u2705 Use As-Is</button>
+                      </div>
+                    </div>`;
+                  }).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>`;
+
+      backdrop.querySelector('#mlrsWizClose').onclick = () => backdrop.remove();
+      const sInp = backdrop.querySelector('#mlrsWizSearch');
+      if (sInp) {
+        sInp.oninput = (e) => { searchTxt = e.target.value; renderWiz(); const el2 = backdrop.querySelector('#mlrsWizSearch'); if (el2) { el2.focus(); el2.setSelectionRange(searchTxt.length, searchTxt.length); } };
+      }
+      backdrop.querySelector('#mlrsWizClearSel').onclick = () => { selectedMap.clear(); renderWiz(); };
+      backdrop.querySelectorAll('[data-wiz-dom]').forEach(b => {
+        b.onclick = () => { filterDom = b.getAttribute('data-wiz-dom'); renderWiz(); };
+      });
+      backdrop.querySelectorAll('[data-wiz-chk]').forEach(chk => {
+        chk.onchange = () => {
+          const eid = chk.getAttribute('data-wiz-chk');
+          const dObj = rawDevs.find(x => x.entity_id === eid);
+          if (chk.checked && dObj) selectedMap.set(eid, Object.assign({}, dObj));
+          else selectedMap.delete(eid);
+          renderWiz();
+        };
+      });
+      backdrop.querySelectorAll('[data-wiz-kind]').forEach(sel => {
+        sel.onchange = () => {
+          const eid = sel.getAttribute('data-wiz-kind');
+          const cur = selectedMap.get(eid);
+          if (cur) { cur.overrideKind = sel.value; renderWiz(); }
+        };
+      });
+      backdrop.querySelector('#mlrsWizAddCustom').onclick = () => {
+        const nm = (backdrop.querySelector('#mlrsWizCustomName').value || '').trim();
+        const dm = backdrop.querySelector('#mlrsWizCustomDom').value || 'light';
+        if (!nm) return;
+        const eid = `${dm}.custom_${nm.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+        const newDev = { entity_id: eid, name: nm, domain: dm, dimmable: true };
+        rawDevs.unshift(newDev);
+        selectedMap.set(eid, newDev);
+        renderWiz();
+      };
+
+      // Action 1: Open in Stencil Studio to fine-tune (background photo, glow, labels)
+      backdrop.querySelectorAll('[data-wiz-edit]').forEach(btn => {
+        btn.onclick = () => {
+          const rc = recs[Number(btn.getAttribute('data-wiz-edit'))];
+          if (!rc) return;
+          backdrop.remove();
+          openFaciaDesigner({
+            model: rc.model,
+            hexId: o.hexId || '',
+            remoteName: `${rc.model.id} ${selArr.length}-Device Custom`,
+            facia: rc.facia,
+            touchZones: rc.tz,
+            hubUrl: o.hubUrl || '',
+            bindRemoteByDefault: Boolean(o.hexId),
+            onSaveCustomModel: async (saveRes) => {
+              saveRes.customModel.suggested_bindings = rc.bindings;
+              if (typeof o.onSaveCustomModel === 'function') await o.onSaveCustomModel(saveRes, rc.bindings);
+            }
+          });
+        };
+      });
+
+      // Action 2: Use As-Is right away!
+      backdrop.querySelectorAll('[data-wiz-apply]').forEach(btn => {
+        btn.onclick = async () => {
+          const rc = recs[Number(btn.getAttribute('data-wiz-apply'))];
+          if (!rc) return;
+          const cleanName = `${rc.model.id} ${selArr.length}-Device Smart Panel`;
+          const targetId = slugifyCustomId(rc.model.id, cleanName);
+          const payload = {
+            id: targetId,
+            name: cleanName,
+            base_model: rc.model.id,
+            stencil_mode: 'full_panel',
+            facia: rc.facia,
+            touch_zones: rc.tz,
+            suggested_bindings: rc.bindings
+          };
+          if (Cat.upsertCustomModel) Cat.upsertCustomModel(payload);
+          if (typeof o.onSaveCustomModel === 'function') {
+            await o.onSaveCustomModel({ customModel: payload, bindNow: Boolean(o.hexId), calibration: defaultCalibration(), touchZones: rc.tz, facia: rc.facia }, rc.bindings);
+          }
+          backdrop.remove();
+        };
+      });
+    }
+
+    document.body.appendChild(backdrop);
+    renderWiz();
+    return backdrop;
+  }
+
+  function mountWorkflowLauncher(containerEl, handlers) {
+    injectStudioStyles(containerEl);
+    if (!containerEl) return null;
+    const h = handlers || {};
+    const storeKey = `mlrs_wf_launcher_${h.launcherId || 'main'}_collapsed`;
+    let collapsed = localStorage.getItem(storeKey) === '1';
+
+    const wipCount = loadWipDrafts().length;
+    const items = [
+      {
+        id: 'recommender',
+        icon: '\uD83E\uDE84',
+        title: 'Recommend Remote for My Devices',
+        desc: 'Pick your lights, blinds, fans & AC \u2014 auto-ranks the best MiBoxer remotes & builds the stencil!',
+        run: () => h.onOpenRecommender ? h.onOpenRecommender() : openDeviceRecommenderWizard({})
+      },
+      {
+        id: 'bare',
+        icon: '\uD83E\uDDFC',
+        title: 'Build Remote from Bare Glass',
+        desc: 'Validated 6-step walkthrough: add custom background artwork, X\u2013Y% sliders & dual icons.',
+        run: () => h.onOpenStencil && h.onOpenStencil('bare_walkthrough')
+      },
+      {
+        id: 'template_or_wip',
+        icon: wipCount > 0 ? '\uD83D\uDCC2' : '\u2728',
+        title: wipCount > 0 ? `Resume WIP Draft (${wipCount}) or Template` : 'Create from Starter Template',
+        desc: wipCount > 0 ? `Jump right back into your saved work-in-progress stencil draft (or pick a template).` : 'Start from a Hybrid Arc + Bar Slider or Room Rocker template and customise labels & glow.',
+        run: () => h.onOpenStencil && h.onOpenStencil(wipCount > 0 ? 'resume_draft' : 'template_edit')
+      },
+      {
+        id: 'mapper',
+        icon: '\uD83C\uDF9B\uFE0F',
+        title: 'Map Buttons & Sliders to Devices',
+        desc: 'Bind 1\u00d7 Tap, 2\u00d7 Double, Long Hold & variable slider ranges to HA / Homebridge entities.',
+        run: () => h.onFocusMapper && h.onFocusMapper()
+      },
+      {
+        id: 'showcase',
+        icon: '\uD83E\uDDED',
+        title: 'Guided Studio Showcase',
+        desc: 'Interactive tour of live 2.4 GHz RF reticles, Peel-Back Stencil X-Ray & Dark-Room Glow.',
+        run: () => h.onStartShowcase && h.onStartShowcase()
+      },
+      {
+        id: 'export_pod',
+        icon: '\uD83D\uDDA8\uFE0F',
+        title: '1:1 Print Sheet & Luminous POD',
+        desc: 'Generate a calibrated 1:1 mm cut sheet (with background graphic), SVG, or POD JSON.',
+        run: () => h.onOpenStencil && h.onOpenStencil('export_pod')
+      }
+    ];
+
+    function render() {
+      if (collapsed) {
+        containerEl.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--mlrs-bg,#fff);border:1px solid var(--mlrs-border,#e2e8f0);border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:12px">
+            <span style="font-weight:700;color:var(--mlrs-fg,#0f172a)">\ud83e\udded What would you like to do today? <span style="font-weight:500;color:var(--mlrs-muted-fg,#64748b)">(Bare Build Walkthrough, Templates, Device Mapping, POD Export)</span></span>
+            <button type="button" class="mlrs-tour-btn demo" data-wf-toggle="open" style="padding:3px 10px !important;font-size:11.5px !important">Show 6 Workflows \u25be</button>
+          </div>`;
+        const btn = containerEl.querySelector('[data-wf-toggle="open"]');
+        if (btn) btn.onclick = () => { collapsed = false; localStorage.setItem(storeKey, '0'); render(); };
+        return;
+      }
+
+      containerEl.innerHTML = `
+        <div class="mlrs-launcher-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div>
+              <span style="font-size:13.5px;font-weight:800;color:var(--mlrs-fg,#0f172a)">\ud83d\udc4b What would you like to do today?</span>
+              <span style="font-size:11.5px;color:var(--mlrs-muted-fg,#64748b);margin-left:6px">Pick a guided workflow below to jump straight in:</span>
+            </div>
+            <button type="button" class="mlrs-tour-btn" data-wf-toggle="close" style="padding:3px 9px !important;font-size:11px !important">Hide Options \u25b4</button>
+          </div>
+          <div class="mlrs-launcher-grid">
+            ${items.map(it => `
+              <button type="button" class="mlrs-wf-item" data-wf-id="${it.id}">
+                <span class="mlrs-wf-ico">${it.icon}</span>
+                <span style="min-width:0;flex:1">
+                  <span style="display:block;font-size:12px;font-weight:700;color:var(--mlrs-fg,#0f172a);margin-bottom:2px">${it.title}</span>
+                  <span style="display:block;font-size:11px;color:var(--mlrs-muted-fg,#64748b);line-height:1.34">${it.desc}</span>
+                </span>
+              </button>
+            `).join('')}
+          </div>
+        </div>`;
+
+      const closeBtn = containerEl.querySelector('[data-wf-toggle="close"]');
+      if (closeBtn) closeBtn.onclick = () => { collapsed = true; localStorage.setItem(storeKey, '1'); render(); };
+      containerEl.querySelectorAll('[data-wf-id]').forEach(el => {
+        el.onclick = () => {
+          const found = items.find(x => x.id === el.getAttribute('data-wf-id'));
+          if (found && found.run) found.run();
+        };
+      });
+    }
+
+    render();
+    return { expand: () => { collapsed = false; localStorage.setItem(storeKey, '0'); render(); } };
   }
 
   root.MiLightRemoteStudio = {
     version: '2.5.0',
-    normalizeTouchZones, defaultCalibration, resolvePhysicalToCustomAction, resolveCustomToPhysicalAction, mountInteractiveStage, mountPeelableStage, downloadTextFile, mountShowcaseTour,
-    buildPodOrderPayload, buildOneToOnePrintSvg, openPrintSheetWindow, openFaciaDesigner
+    normalizeTouchZones, defaultCalibration, resolvePhysicalToCustomAction, resolveCustomToPhysicalAction, mountInteractiveStage, mountPeelableStage, downloadTextFile, mountShowcaseTour, mountWorkflowLauncher,
+    buildPodOrderPayload, buildOneToOnePrintSvg, openPrintSheetWindow, openFaciaDesigner, openDeviceRecommenderWizard, loadWipDrafts
   };
 })(typeof window !== 'undefined' ? window : globalThis);

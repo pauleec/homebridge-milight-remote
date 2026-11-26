@@ -687,7 +687,7 @@
         <path d="M 64 4 C 99 4, 115 26, 116 134 C 115 242, 99 264, 64 264 C 29 264, 13 242, 12 134 C 13 26, 29 4, 64 4 Z" fill="${p.body}" stroke="${rimCol}" stroke-width="1.8"/>
         <path d="M 64 6 C 97 6, 113 28, 114 134 C 113 240, 97 262, 64 262 C 31 262, 15 240, 14 134 C 15 28, 31 6, 64 6 Z" fill="none" stroke="${p.bezel}" stroke-width="0.9"/>
         ${masterOn}${masterOff}
-        <!-- Color Ring + Center Cap with Indicator -->
+        <!-- Colour Ring + Center Cap with Indicator -->
         ${colorRing(64, 71, 29, 13)}
         <circle cx="64" cy="71" r="16" fill="${p.body}" stroke="${p.bezel}" stroke-width="0.7"/>
         <circle cx="64" cy="71" r="3.8" fill="none" stroke="${p.keyStr}" stroke-width="0.85"/>
@@ -1146,10 +1146,10 @@
     return { width_mm: 86, height_mm: 86, glass_w_mm: 80, glass_h_mm: 80, corner_mm: 4.0, mount: 'Standard Panel', form_factor: 'Standard Remote / Wall Panel' };
   }
 
-  // Standardized 24x24 Architectural Vector Icons: Rooms (Group A) + Devices & Controls (Group B)
+  // Standardised 24x24 Architectural Vector Icons: Rooms (Group A) + Devices & Controls (Group B)
   const FACIA_ICONS = {
     none:       { group: 'basic',  name: 'No Icon (Text Only)', svg: '' },
-    // --- Standardized Room Icons (for Multi-Zone Remotes) ---
+    // --- Standardised Room Icons (for Multi-Zone Remotes) ---
     home_all:   { group: 'room',   name: 'Whole Home / All', svg: '<path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1v-9.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
     sofa:       { group: 'room',   name: 'Living / Lounge', svg: '<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3m-16 0h18v5H3v-5zm2 5v2.5m14-2.5v2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>' },
     kitchen:    { group: 'room',   name: 'Kitchen', svg: '<rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/><line x1="4" y1="10" x2="20" y2="10" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="7" r="1" fill="currentColor"/><circle cx="12" cy="7" r="1" fill="currentColor"/><line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' },
@@ -1565,20 +1565,123 @@
       defs += `<pattern id="pat_${u}" width="8" height="3" patternUnits="userSpaceOnUse"><line x1="0" y1="1" x2="8" y2="1" stroke="${col.padStroke}" stroke-width="0.35" opacity="0.3"/></pattern>`;
     }
     const lumCfg = facia.luminous || {};
-    const anyLum = Boolean(lumCfg.enabled || lumCfg.border || lumCfg.header || lumCfg.slots || Object.values(pads).some(p => p && p.luminous));
+    const darkPreview = Boolean(o.luminousPreview && !o.stencilMode);
+    const LUM_INK = '#6ee7b7';      // Strontium aluminate yellow-green/aqua emission
+    const LUM_CORE = '#ecfdf5';     // Bright phosphor core
+    const DIM_NIGHT_INK = '#334155'; // Unlit ink in dark room
+    const anyLum = Boolean(darkPreview || lumCfg.enabled || lumCfg.border || lumCfg.header || lumCfg.slots || Object.values(pads).some(p => p && p.luminous));
     if (anyLum) {
-      defs += `<filter id="glow_${u}" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+      defs += `<filter id="glow_${u}" x="-45%" y="-45%" width="190%" height="190%">
+        <feGaussianBlur stdDeviation="${darkPreview ? '3.4' : '1.9'}" result="blur1"/>
+        <feGaussianBlur stdDeviation="${darkPreview ? '1.3' : '0.7'}" result="blur2"/>
+        <feMerge><feMergeNode in="blur1"/><feMergeNode in="blur2"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>`;
     }
     defs += `</defs>`;
 
-    const bgCol = facia.bgColor || col.bg;
-    const glassCol = facia.bgColor || col.glass;
-    const bdrCol = facia.boundaryColor || col.padStroke || col.bezel;
-    const borderGlow = (lumCfg.enabled && lumCfg.border) ? ` filter="url(#glow_${u})"` : '';
+    const isSlotLum = (cfg) => Boolean((lumCfg.enabled && lumCfg.slots) || (cfg && cfg.luminous));
+    const isBdrLum = Boolean(lumCfg.enabled && lumCfg.border);
+    const isHdrLum = Boolean(lumCfg.enabled && lumCfg.header);
+
+    const bgCol = darkPreview ? '#070b14' : (facia.bgColor || col.bg);
+    const glassCol = darkPreview ? '#0b1220' : (facia.bgColor || col.glass);
+    const bdrCol = darkPreview ? (isBdrLum ? LUM_INK : '#1e293b') : (facia.boundaryColor || col.padStroke || col.bezel);
+    const borderGlow = isBdrLum ? ` filter="url(#glow_${u})"` : '';
+
+    // Helper: draw configurable slider track (pitch + end arrows: 'chevron' | 'triangle' | 'ticks' | 'dots' | 'none')
+    function renderSliderTrackMarkup(optsTrk) {
+      const pitch = Number(optsTrk.pitch ?? 2.2);
+      const arrowStyle = optsTrk.arrows || 'chevron';
+      const strokeCol = optsTrk.color || col.ink;
+      const dashAttr = pitch <= 0.1 ? '' : ` stroke-dasharray="${(pitch * 0.95).toFixed(2)},${(pitch * 0.85).toFixed(2)}" stroke-linecap="round"`;
+      const sw = 1.2;
+      let mOut = '';
+
+      // Emit an arrowhead or cap at (px, py) pointing in unit direction (ux, uy)
+      const emitCap = (px, py, ux, uy, isMaxEnd) => {
+        const nx = -uy, ny = ux; // perpendicular normal
+        if (arrowStyle === 'none') return '';
+        if (arrowStyle === 'ticks') {
+          const hw = 2.1;
+          return `<line x1="${(px + nx * hw).toFixed(2)}" y1="${(py + ny * hw).toFixed(2)}" x2="${(px - nx * hw).toFixed(2)}" y2="${(py - ny * hw).toFixed(2)}" stroke="${strokeCol}" stroke-width="1.35" stroke-linecap="round" pointer-events="none"/>`;
+        }
+        if (arrowStyle === 'dots') {
+          const rDot = isMaxEnd ? 1.65 : 1.05;
+          return `<circle cx="${px.toFixed(2)}" cy="${py.toFixed(2)}" r="${rDot.toFixed(2)}" fill="${strokeCol}" pointer-events="none"/>`;
+        }
+        const tipX = px + ux * 0.9, tipY = py + uy * 0.9;
+        const bx = tipX - ux * 2.7, by = tipY - uy * 2.7;
+        const hw = 1.75;
+        if (arrowStyle === 'triangle') {
+          return `<polygon points="${tipX.toFixed(2)},${tipY.toFixed(2)} ${(bx + nx * hw).toFixed(2)},${(by + ny * hw).toFixed(2)} ${(bx - nx * hw).toFixed(2)},${(by - ny * hw).toFixed(2)}" fill="${strokeCol}" pointer-events="none"/>`;
+        }
+        // Default: 'chevron'
+        return `<polyline points="${(bx + nx * hw).toFixed(2)},${(by + ny * hw).toFixed(2)} ${tipX.toFixed(2)},${tipY.toFixed(2)} ${(bx - nx * hw).toFixed(2)},${(by - ny * hw).toFixed(2)}" fill="none" stroke="${strokeCol}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>`;
+      };
+
+      const sMin = Number(optsTrk.sMin ?? 0), sMax = Number(optsTrk.sMax ?? 100);
+      const startIsMax = sMin > sMax;
+
+      if (optsTrk.kind === 'arc') {
+        const { cx, cy, r, sDeg, eDeg } = optsTrk;
+        const insetDeg = arrowStyle === 'none' ? 3.2 : 5.4;
+        const a1 = sDeg + insetDeg, a2 = eDeg - insetDeg;
+        if (a2 > a1 + 2) {
+          const p1 = polarPt(cx, cy, r, a1);
+          const p2 = polarPt(cx, cy, r, a2);
+          const lg = Math.abs(a2 - a1) > 180 ? '1' : '0';
+          mOut += `<path d="M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 ${lg} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}" fill="none" stroke="${strokeCol}" stroke-width="${sw}"${dashAttr} opacity="0.88" pointer-events="none"/>`;
+          // Tangent at angle deg (0=12 o'clock CW): CW unit tangent = (cos(rad), sin(rad)); CCW outward at a1 = (-cos(rad1), -sin(rad1))
+          const rad1 = (a1 * Math.PI) / 180, rad2 = (a2 * Math.PI) / 180;
+          mOut += emitCap(p1.x, p1.y, -Math.cos(rad1), -Math.sin(rad1), startIsMax);
+          mOut += emitCap(p2.x, p2.y,  Math.cos(rad2),  Math.sin(rad2), !startIsMax);
+        }
+      } else {
+        const { x1, y1, x2, y2 } = optsTrk;
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        if (len > 5) {
+          const ux = dx / len, uy = dy / len;
+          const inset = arrowStyle === 'none' ? 0.5 : 2.2;
+          const sx = x1 + ux * inset, sy = y1 + uy * inset;
+          const ex = x2 - ux * inset, ey = y2 - uy * inset;
+          mOut += `<line x1="${sx.toFixed(2)}" y1="${sy.toFixed(2)}" x2="${ex.toFixed(2)}" y2="${ey.toFixed(2)}" stroke="${strokeCol}" stroke-width="${sw}"${dashAttr} opacity="0.88" pointer-events="none"/>`;
+          mOut += emitCap(sx, sy, -ux, -uy, startIsMax);
+          mOut += emitCap(ex, ey,  ux,  uy, !startIsMax);
+        }
+      }
+      return mOut;
+    }
+
+    function hexToRgba(hexStr, alphaVal) {
+      const a = Math.max(0, Math.min(1, Number(alphaVal)));
+      const mHex = String(hexStr || '').trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (!mHex) return hexStr || `rgba(255,255,255,${a.toFixed(2)})`;
+      let h = mHex[1];
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},${a.toFixed(2)})`;
+    }
+    const bgImg = (facia.bgImage && facia.bgImage.dataUrl) ? facia.bgImage : null;
+    let bgImgMarkup = '';
+    if (bgImg) {
+      const clipId = `bgclip_${u}`;
+      const zScale = Math.max(0.3, Math.min(3.0, Number(bgImg.scale ?? 100) / 100));
+      const panX = Number(bgImg.x ?? 0), panY = Number(bgImg.y ?? 0);
+      const fitMode = bgImg.fit || 'cover';
+      const par = fitMode === 'contain' ? 'xMidYMid meet' : (fitMode === 'stretch' ? 'none' : 'xMidYMid slice');
+      const iw = bp.glass.w * zScale, ih = bp.glass.h * zScale;
+      const ix = bp.glass.x + (bp.glass.w - iw) / 2 + (panX / 100) * bp.glass.w;
+      const iy = bp.glass.y + (bp.glass.h - ih) / 2 + (panY / 100) * bp.glass.h;
+      const rawOp = Math.max(0.05, Math.min(1, Number(bgImg.opacity ?? 88) / 100));
+      const effOp = darkPreview ? (rawOp * 0.18) : rawOp;
+      bgImgMarkup = `<defs><clipPath id="${clipId}"><rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}"/></clipPath></defs>` +
+        `<g clip-path="url(#${clipId})" pointer-events="none"><image href="${escXml(bgImg.dataUrl)}" x="${ix.toFixed(2)}" y="${iy.toFixed(2)}" width="${iw.toFixed(2)}" height="${ih.toFixed(2)}" preserveAspectRatio="${par}" opacity="${effOp.toFixed(2)}"/></g>`;
+    }
 
     let body = `${defs}
       <rect x="${bp.outer.x}" y="${bp.outer.y}" width="${bp.outer.w}" height="${bp.outer.h}" rx="${bp.outer.rx}" fill="${bgCol}" stroke="${bdrCol}" stroke-width="2"${borderGlow}/>
-      <rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="${glassCol}" stroke="${bdrCol}" stroke-width="0.8"${borderGlow}/>`;
+      <rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="${glassCol}" stroke="${bdrCol}" stroke-width="0.8"${borderGlow}/>${bgImgMarkup}`;
 
     if (facia.bgPattern === 'grid' || facia.bgPattern === 'brushed') {
       body += `<rect x="${bp.glass.x}" y="${bp.glass.y}" width="${bp.glass.w}" height="${bp.glass.h}" rx="${bp.glass.rx}" fill="url(#pat_${u})" pointer-events="none"/>`;
@@ -1587,7 +1690,8 @@
     const panelFontObj = FACIA_FONTS[facia.fontFamily || 'sans'] || FACIA_FONTS.sans;
     const panelFontStack = panelFontObj.stack;
     const panelFontScale = Math.max(0.6, Math.min(1.6, Number(facia.fontScale || 100) / 100));
-    const headerGlow = (lumCfg.enabled && lumCfg.header) ? ` filter="url(#glow_${u})"` : '';
+    const headerGlow = isHdrLum ? ` filter="url(#glow_${u})"` : '';
+    const hdrInk = darkPreview ? (isHdrLum ? LUM_INK : DIM_NIGHT_INK) : col.subInk;
 
     if (facia.panelTitle) {
       const titleTxt = String(facia.panelTitle).trim().toUpperCase();
@@ -1599,9 +1703,9 @@
         const pA = polarPt(tcx, tcy, tr, 225);
         const pB = polarPt(tcx, tcy, tr, 135);
         body += `<defs><path id="${tArcId}" d="M ${pA.x.toFixed(2)} ${pA.y.toFixed(2)} A ${tr.toFixed(2)} ${tr.toFixed(2)} 0 0 0 ${pB.x.toFixed(2)} ${pB.y.toFixed(2)}"/></defs>`;
-        body += `<text font-family="${escXml(panelFontStack)}" font-size="${(6.4 * panelFontScale).toFixed(2)}" font-weight="800" letter-spacing="0.9" fill="${col.subInk}"${headerGlow} pointer-events="none"><textPath href="#${tArcId}" startOffset="50%" text-anchor="middle">${escXml(titleTxt)}</textPath></text>`;
+        body += `<text font-family="${escXml(panelFontStack)}" font-size="${(6.4 * panelFontScale).toFixed(2)}" font-weight="800" letter-spacing="0.9" fill="${hdrInk}"${headerGlow} pointer-events="none"><textPath href="#${tArcId}" startOffset="50%" text-anchor="middle">${escXml(titleTxt)}</textPath></text>`;
       } else {
-        body += `<text x="${(bp.vw / 2).toFixed(1)}" y="${bp.titleY}" text-anchor="middle" font-family="${escXml(panelFontStack)}" font-size="${(7.2 * panelFontScale).toFixed(2)}" font-weight="800" letter-spacing="0.7" fill="${col.subInk}"${headerGlow} pointer-events="none">${escXml(titleTxt)}</text>`;
+        body += `<text x="${(bp.vw / 2).toFixed(1)}" y="${bp.titleY}" text-anchor="middle" font-family="${escXml(panelFontStack)}" font-size="${(7.2 * panelFontScale).toFixed(2)}" font-weight="800" letter-spacing="0.7" fill="${hdrInk}"${headerGlow} pointer-events="none">${escXml(titleTxt)}</text>`;
       }
     } else if (facia.hideLogo === false) {
       body += `<text x="${bp.glass.x + 12}" y="${bp.titleY}" font-family="Inter,system-ui,sans-serif" font-size="8" font-weight="800" fill="${col.subInk}" pointer-events="none">MiBOXER®</text>`;
@@ -1643,10 +1747,17 @@
     }
 
     function drawGlyphContent(cx, cy, bw, bh, cfg, fallbackLbl, fallbackSub) {
-      const iconPos = (cfg && cfg.iconPos) || 'top';
+      // Default wide pads (bw >= bh * 1.32) to 'left' if iconPos not explicitly set, else 'top'
+      const rawPos = (cfg && cfg.iconPos) || '';
+      const iconPos = rawPos || ((bw >= bh * 1.45 && cfg && cfg.segmentMode === 'slider') ? 'left' : 'top');
       const icoKey = iconPos === 'none' ? 'none' : ((cfg && cfg.icon) || 'none');
       const ico = FACIA_ICONS[icoKey];
       const hasIco = Boolean(ico && ico.svg);
+
+      const endKey = iconPos === 'both' ? ((cfg && cfg.iconEnd) || icoKey) : 'none';
+      const icoEnd = FACIA_ICONS[endKey];
+      const hasEndIco = Boolean(iconPos === 'both' && icoEnd && icoEnd.svg);
+
       const rawLbl = (cfg && cfg.label !== undefined) ? String(cfg.label) : (fallbackLbl || '');
       let rawSub = (cfg && cfg.sublabel !== undefined) ? String(cfg.sublabel) : (fallbackSub || '');
       if (!rawSub && cfg) {
@@ -1656,13 +1767,61 @@
           rawSub = `1-${cfg.multifunc.steps || 4} • Hold`;
         }
       }
-      const ink = (cfg && cfg.color) || col.ink;
+      const slotLum = isSlotLum(cfg);
+      const ink = darkPreview ? (slotLum ? LUM_CORE : DIM_NIGHT_INK) : ((cfg && cfg.color) || col.ink);
+      const effSubInk = darkPreview ? (slotLum ? LUM_INK : DIM_NIGHT_INK) : col.subInk;
+      const glowGrp = (darkPreview && slotLum) ? ` filter="url(#glow_${u})"` : '';
       const pf = resolvePadFont(cfg);
 
       const padW = Math.max(8, bw - 2.6);
       const padH = Math.max(8, bh - 2.6);
-      const minD = Math.min(padW, padH);
+      let out = '';
 
+      // HORIZONTAL LAYOUT ('left', 'right', 'both'): Icon(s) sit beside centered Main + Sub text!
+      if ((iconPos === 'left' || iconPos === 'right' || iconPos === 'both') && (hasIco || hasEndIco)) {
+        const icoSz = Math.max(4.6, Math.min(11.5, padH * 0.58, padW * (iconPos === 'both' ? 0.22 : 0.28)));
+        const sideGap = 1.8;
+        const reservedW = (hasIco ? icoSz + sideGap : 0) + (hasEndIco ? icoSz + sideGap : 0);
+        const textAvailW = Math.max(7, padW - reservedW);
+        const textCx = iconPos === 'left'
+          ? (cx + (hasIco ? (icoSz + sideGap) * 0.46 : 0))
+          : iconPos === 'right'
+            ? (cx - (hasIco ? (icoSz + sideGap) * 0.46 : 0))
+            : cx;
+
+        const baseLblFs = Math.min(7.4, padH * 0.36) * pf.scale;
+        const lblFit = rawLbl ? fitText(rawLbl, textAvailW + 2.2, baseLblFs, 3.0, pf.charFactor) : { text: '', fs: 0 };
+        const wantSub = Boolean(rawSub && padH >= 11.0);
+        const baseSubFs = Math.min(4.8, (lblFit.fs || padH * 0.25) * 0.74);
+        const subFit = wantSub ? fitText(rawSub, textAvailW + 2.4, baseSubFs, 2.7, pf.charFactor) : { text: '', fs: 0 };
+
+        const tH = (lblFit.text ? lblFit.fs * 1.10 : 0) + (subFit.text ? subFit.fs * 1.12 : 0);
+        let ty = cy - tH / 2;
+        if (lblFit.text) {
+          out += `<text x="${textCx.toFixed(2)}" y="${(ty + lblFit.fs * 0.82).toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${lblFit.fs.toFixed(2)}" font-weight="700" fill="${ink}" pointer-events="none">${escXml(lblFit.text)}</text>`;
+          ty += lblFit.fs * 1.10;
+        }
+        if (subFit.text) {
+          out += `<text x="${textCx.toFixed(2)}" y="${(ty + subFit.fs * 0.82).toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${subFit.fs.toFixed(2)}" font-weight="600" fill="${effSubInk}" pointer-events="none">${escXml(subFit.text)}</text>`;
+        }
+
+        const iy = cy - icoSz / 2;
+        if (hasIco && (iconPos === 'left' || iconPos === 'both')) {
+          const ix = iconPos === 'both' ? (cx - padW / 2 + 1.2) : Math.max(cx - padW / 2 + 1.0, textCx - textAvailW / 2 - icoSz - 0.6);
+          out += `<g transform="translate(${ix.toFixed(2)},${iy.toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+        } else if (hasIco && iconPos === 'right') {
+          const ix = Math.min(cx + padW / 2 - icoSz - 1.0, textCx + textAvailW / 2 + 0.6);
+          out += `<g transform="translate(${ix.toFixed(2)},${iy.toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+        }
+        if (hasEndIco) {
+          const ixEnd = cx + padW / 2 - icoSz - 1.2;
+          out += `<g transform="translate(${ixEnd.toFixed(2)},${iy.toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${icoEnd.svg.replace(/currentColor/g, ink)}</g>`;
+        }
+        return out;
+      }
+
+      // VERTICAL LAYOUT ('top', 'bottom', or 'none')
+      const minD = Math.min(padW, padH);
       const baseLblFs = Math.min(7.8, minD * (hasIco ? 0.25 : 0.36)) * pf.scale;
       const lblFit = rawLbl ? fitText(rawLbl, padW, baseLblFs, 3.2, pf.charFactor) : { text: '', fs: 0 };
       const baseSubFs = Math.min(4.9, (lblFit.fs || minD * 0.22 * pf.scale) * 0.72);
@@ -1670,31 +1829,25 @@
       const subFit = wantSub ? fitText(rawSub, padW, baseSubFs, 2.8, pf.charFactor) : { text: '', fs: 0 };
 
       const textBlockH = (lblFit.text ? lblFit.fs * 1.12 : 0) + (subFit.text ? subFit.fs * 1.15 : 0);
-      const availForIco = hasIco ? (textBlockH > 0 ? Math.max(4.8, padH - textBlockH - 2.0) : Math.min(padW * 0.68, padH * 0.68)) : 0;
-      const icoSz = hasIco ? Math.max(4.8, Math.min(13.8, availForIco)) : 0;
+      const availForIco = hasIco ? (textBlockH > 0 ? Math.max(4.8, padH - textBlockH - 2.2) : Math.min(padW * 0.68, padH * 0.68)) : 0;
+      const icoSz = hasIco ? Math.max(4.8, Math.min(13.2, availForIco)) : 0;
 
-      const gap = (hasIco && textBlockH > 0) ? 1.5 : 0;
+      const gap = (hasIco && textBlockH > 0) ? 1.8 : 0;
       const totalH = icoSz + gap + textBlockH;
       let yCursor = cy - totalH / 2;
-      let out = '';
 
       const renderIconAt = (iy) => {
         const ix = cx - icoSz / 2;
-        const inner = ico.svg.replace(/currentColor/g, ink);
-        return `<g transform="translate(${ix.toFixed(2)},${iy.toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${inner}</g>`;
+        return `<g transform="translate(${ix.toFixed(2)},${iy.toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
       };
-
       const renderTextAt = (yStart) => {
-        let ty = yStart;
-        let tOut = '';
+        let ty = yStart, tOut = '';
         if (lblFit.text) {
-          const baselineY = ty + lblFit.fs * 0.82;
-          tOut += `<text x="${cx.toFixed(2)}" y="${baselineY.toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${lblFit.fs.toFixed(2)}" font-weight="700" fill="${ink}" pointer-events="none">${escXml(lblFit.text)}</text>`;
+          tOut += `<text x="${cx.toFixed(2)}" y="${(ty + lblFit.fs * 0.82).toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${lblFit.fs.toFixed(2)}" font-weight="700" fill="${ink}" pointer-events="none">${escXml(lblFit.text)}</text>`;
           ty += lblFit.fs * 1.12;
         }
         if (subFit.text) {
-          const subBaselineY = ty + subFit.fs * 0.82;
-          tOut += `<text x="${cx.toFixed(2)}" y="${subBaselineY.toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${subFit.fs.toFixed(2)}" font-weight="600" fill="${col.subInk}" pointer-events="none">${escXml(subFit.text)}</text>`;
+          tOut += `<text x="${cx.toFixed(2)}" y="${(ty + subFit.fs * 0.82).toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${subFit.fs.toFixed(2)}" font-weight="600" fill="${effSubInk}" pointer-events="none">${escXml(subFit.text)}</text>`;
         }
         return tOut;
       };
@@ -1709,16 +1862,31 @@
         }
         out += renderTextAt(yCursor);
       }
-
-      return out;
+      return glowGrp ? `<g${glowGrp}>${out}</g>` : out;
     }
 
     function padColors(cfg) {
       const st = (cfg && cfg.style) || defStyle;
-      if (st === 'blank') return { st, fill: col.glass, stroke: showStencilSlots ? col.padStroke : 'none', dash: showStencilSlots ? '2 2' : '', op: showStencilSlots ? '0.45' : '1' };
-      if (st === 'minimal') return { st, fill: col.glass, stroke: showStencilSlots ? col.padStroke : 'none', dash: showStencilSlots ? '1.5 1.5' : '', op: '1' };
-      if (st === 'outline') return { st, fill: col.glass, stroke: col.padStroke, dash: '', op: '1' };
-      return { st: 'keycap', fill: (cfg && cfg.fill) || col.padFill, stroke: col.padStroke, dash: '', op: '1' };
+      const slotLum = isSlotLum(cfg);
+      if (darkPreview) {
+        if (st === 'blank') return { st, fill: '#0b1220', stroke: 'none', dash: '', op: '0.25', lum: false };
+        return {
+          st,
+          fill: slotLum ? 'rgba(16, 185, 129, 0.13)' : '#0f172a',
+          stroke: slotLum ? LUM_INK : '#1e293b',
+          dash: '',
+          op: '1',
+          lum: slotLum
+        };
+      }
+      const pStroke = slotLum ? '#10b981' : (facia.boundaryColor || col.padStroke);
+      if (st === 'blank') return { st, fill: glassCol, stroke: showStencilSlots ? pStroke : 'none', dash: showStencilSlots ? '2 2' : '', op: showStencilSlots ? '0.45' : '1', lum: slotLum };
+      if (st === 'minimal') return { st, fill: glassCol, stroke: showStencilSlots ? pStroke : 'none', dash: showStencilSlots ? '1.5 1.5' : '', op: '1', lum: slotLum };
+      if (st === 'outline') return { st, fill: glassCol, stroke: pStroke, dash: '', op: '1', lum: slotLum };
+      const padAlphaPct = bgImg ? Number(bgImg.padAlpha ?? 72) : 100;
+      const pFill = (cfg && cfg.fill)
+        || (bgImg ? hexToRgba(col.padFill || '#ffffff', padAlphaPct / 100) : (facia.bgColor ? 'rgba(255,255,255,0.06)' : col.padFill));
+      return { st: 'keycap', fill: pFill, stroke: pStroke, dash: '', op: '1', lum: slotLum };
     }
 
     function selRingRect(x, y, w, h, rx) {
@@ -1747,103 +1915,147 @@
             const isLumSeg = Boolean((lumCfg.enabled && lumCfg.slots) || cfg.luminous);
             const glowSeg = isLumSeg ? ` filter="url(#glow_${u})"` : '';
             body += `<path class="mbx-seg-hit" data-seg-act="${sKey}" data-pad-key="${sKey}" data-sdeg="${sDeg.toFixed(1)}" data-edeg="${eDeg.toFixed(1)}" data-cx="${s.cx}" data-cy="${s.cy}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} d="${d}" fill="${pc.fill}" stroke="${isSelected ? col.accent : pc.stroke}" stroke-width="${isSelected ? 2 : 1.05}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''}${glowSeg} style="cursor:pointer"/>`;
+
             const defL = (surfCfg.labels && surfCfg.labels[i]) || `${i + 1}`;
             const lblStr = (cfg && cfg.label !== undefined) ? String(cfg.label).trim() : defL;
-            const iconPos = (cfg && cfg.iconPos) || 'top';
+            const arcSpan = Math.max(10, eDeg - sDeg);
+            // Default wide ring segments (>= 50 deg) to 'left' so icon sits in the angular flank beside Main+Sub text!
+            const iconPos = (cfg && cfg.iconPos) || (arcSpan >= 50 ? 'left' : 'top');
             const icoKey = iconPos === 'none' ? 'none' : ((cfg && cfg.icon) || 'none');
             const ico = FACIA_ICONS[icoKey];
             const hasIco = Boolean(ico && ico.svg);
-            const ink = (cfg && cfg.color) || col.ink;
+            const endKey = iconPos === 'both' ? ((cfg && cfg.iconEnd) || icoKey) : 'none';
+            const icoEnd = FACIA_ICONS[endKey];
+            const hasEndIco = Boolean(iconPos === 'both' && icoEnd && icoEnd.svg);
+
+            const ink = darkPreview ? (isLumSeg ? LUM_CORE : DIM_NIGHT_INK) : ((cfg && cfg.color) || col.ink);
+            const segSubInk = darkPreview ? (isLumSeg ? LUM_INK : DIM_NIGHT_INK) : col.subInk;
             const pf = resolvePadFont(cfg);
 
             if (pc.st !== 'blank') {
-              const arcSpan = Math.max(10, eDeg - sDeg);
               const isLowerArc = midDeg > 95 && midDeg < 265;
               const isSlider = Boolean(cfg && cfg.segmentMode === 'slider');
               const isMf = Boolean(!isSlider && cfg && cfg.multifunc && cfg.multifunc.enabled);
+              const sMin = Number(cfg.sliderMin ?? 0);
+              const sMax = Number(cfg.sliderMax ?? 100);
+              const subStr = (cfg && cfg.sublabel !== undefined && String(cfg.sublabel).trim() !== '')
+                ? String(cfg.sublabel).trim()
+                : isSlider ? `${sMin}→${sMax}%`
+                : isMf ? `1-${cfg.multifunc.steps || 4} • Hold` : '';
 
-              // Helper to emit a curved textPath centered along the segment's circular arc at radius rBand
-              const emitArcText = (idSuffix, rBand, txt, desiredFs, minFs, weight, fillCol, fontStack) => {
+              // Helper: emit curved text along reading-order sub-arc [readStartDeg -> readEndDeg]
+              const emitSubArcText = (idSuffix, rBand, rStartDeg, rEndDeg, txt, desiredFs, minFs, weight, fillCol, fontStack) => {
                 if (!txt) return;
-                const padAng = Math.min(6.5, arcSpan * 0.10);
-                const effDeg = Math.max(8, arcSpan - padAng * 2);
-                const arcLen = (effDeg * Math.PI / 180) * rBand;
+                const subSpan = Math.abs(rEndDeg - rStartDeg);
+                if (subSpan < 8) return;
+                const arcLen = (subSpan * Math.PI / 180) * rBand;
                 const fitted = fitText(txt, arcLen + 2.5, desiredFs, minFs, pf.charFactor);
                 if (!fitted.text) return;
-                const a1 = isLowerArc ? (eDeg - padAng) : (sDeg + padAng);
-                const a2 = isLowerArc ? (sDeg + padAng) : (eDeg - padAng);
-                const pStart = polarPt(s.cx, s.cy, rBand, a1);
-                const pEnd = polarPt(s.cx, s.cy, rBand, a2);
+                const pStart = polarPt(s.cx, s.cy, rBand, rStartDeg);
+                const pEnd = polarPt(s.cx, s.cy, rBand, rEndDeg);
                 const sweep = isLowerArc ? '0' : '1';
-                const lgFlag = effDeg > 180 ? '1' : '0';
+                const lgFlag = subSpan > 180 ? '1' : '0';
                 const arcId = `arc_${u}_${i}_${idSuffix}`;
                 body += `<defs><path id="${arcId}" d="M ${pStart.x.toFixed(2)} ${pStart.y.toFixed(2)} A ${rBand.toFixed(2)} ${rBand.toFixed(2)} 0 ${lgFlag} ${sweep} ${pEnd.x.toFixed(2)} ${pEnd.y.toFixed(2)}"/></defs>`;
-                // dy="0.34em" vertically centers baseline along the circular arc radius!
                 body += `<text font-family="${escXml(fontStack || pf.stack)}" font-size="${fitted.fs.toFixed(2)}" font-weight="${weight}" fill="${fillCol}" pointer-events="none"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle" dy="0.34em">${escXml(fitted.text)}</textPath></text>`;
               };
 
-              if (arcSpan >= 38) {
-                // Radial band allocation so Icon ('top' = outer edge, 'bottom' = inner edge) NEVER collides with central arc text!
-                let icoFrac = 0.77;
-                let lblFrac = 0.50;
-                let cueFrac = 0.22;
-                let trkFrac = 0.90;
+              if (arcSpan >= 42) {
+                // Reading-order left-to-right angles along the arc (so 'Left' is ALWAYS visual left, even on bottom slices!)
+                const padAng = Math.min(5.5, arcSpan * 0.08);
+                const readLeftDeg  = isLowerArc ? (eDeg - padAng) : (sDeg + padAng);
+                const readRightDeg = isLowerArc ? (sDeg + padAng) : (eDeg - padAng);
+                const dirSign = isLowerArc ? -1 : 1; // +dirSign moves from visual-left toward visual-right
 
-                if (hasIco && iconPos === 'top') {
-                  icoFrac = 0.76;
-                  lblFrac = (isSlider || isMf || cfg.sublabel) ? 0.44 : 0.34;
-                  cueFrac = 0.18;
-                  trkFrac = 0.91;
-                } else if (hasIco && iconPos === 'bottom') {
-                  icoFrac = 0.26;
-                  lblFrac = (isSlider || isMf || cfg.sublabel) ? 0.58 : 0.66;
-                  cueFrac = 0.82;
-                  trkFrac = 0.11;
+                const rMid = s.rIn + ringThick * 0.50;
+                const icoSz = Math.max(4.8, Math.min(7.4, ringThick * 0.44));
+                const icoSpanDeg = Math.min(arcSpan * 0.30, ((icoSz + 2.4) / Math.max(12, rMid)) * (180 / Math.PI));
+
+                if ((iconPos === 'left' || iconPos === 'right' || iconPos === 'both') && (hasIco || hasEndIco)) {
+                  // ANGULAR FLANK PLACEMENT: Icon(s) sit on Left / Right / Both flanks at rMid; Main + Sub text stay centered!
+                  let txtLeftDeg = readLeftDeg;
+                  let txtRightDeg = readRightDeg;
+
+                  if (hasIco && (iconPos === 'left' || iconPos === 'both')) {
+                    const iDeg = readLeftDeg + dirSign * (icoSpanDeg * 0.48);
+                    const ip = polarPt(s.cx, s.cy, rMid, iDeg);
+                    body += `<g transform="translate(${(ip.x - icoSz / 2).toFixed(2)},${(ip.y - icoSz / 2).toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+                    txtLeftDeg += dirSign * (icoSpanDeg * 0.95);
+                  }
+                  if (hasIco && iconPos === 'right') {
+                    const iDeg = readRightDeg - dirSign * (icoSpanDeg * 0.48);
+                    const ip = polarPt(s.cx, s.cy, rMid, iDeg);
+                    body += `<g transform="translate(${(ip.x - icoSz / 2).toFixed(2)},${(ip.y - icoSz / 2).toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+                    txtRightDeg -= dirSign * (icoSpanDeg * 0.95);
+                  }
+                  if (hasEndIco) {
+                    const iDegEnd = readRightDeg - dirSign * (icoSpanDeg * 0.48);
+                    const ipEnd = polarPt(s.cx, s.cy, rMid, iDegEnd);
+                    body += `<g transform="translate(${(ipEnd.x - icoSz / 2).toFixed(2)},${(ipEnd.y - icoSz / 2).toFixed(2)}) scale(${(icoSz / 24).toFixed(4)})" pointer-events="none">${icoEnd.svg.replace(/currentColor/g, ink)}</g>`;
+                    txtRightDeg -= dirSign * (icoSpanDeg * 0.95);
+                  }
+
+                  // Visual "above" vs "below" radii (accounting for lower-half flip so Main Label is always visually ABOVE Sub-Label!)
+                  const rVisualTop = isLowerArc ? (s.rIn + ringThick * 0.34) : (s.rIn + ringThick * 0.66);
+                  const rVisualBot = isLowerArc ? (s.rIn + ringThick * 0.69) : (s.rIn + ringThick * 0.31);
+                  const mainR = subStr ? rVisualTop : rMid;
+                  const baseMainFs = Math.max(4.0, Math.min(6.4, ringThick * (subStr ? 0.31 : 0.36))) * pf.scale;
+                  emitSubArcText('lbl', mainR, txtLeftDeg, txtRightDeg, lblStr, baseMainFs, 3.0, '800', ink, pf.stack);
+                  if (subStr && ringThick >= 12.5) {
+                    const baseSubFs = Math.max(3.1, Math.min(4.5, ringThick * 0.23)) * pf.scale;
+                    emitSubArcText('sub', rVisualBot, txtLeftDeg, txtRightDeg, subStr, baseSubFs, 2.7, '700', segSubInk, pf.stack);
+                  }
                 } else {
-                  // No icon: Primary label sits dead-center on the circular arc (0.52), with optional slider/toggle cue below
-                  lblFrac = (isSlider || isMf || cfg.sublabel) ? 0.56 : 0.50;
-                  cueFrac = 0.25;
-                  trkFrac = 0.88;
+                  // RADIAL ('top', 'bottom', or 'none' text-only): Visually upright order with wide separation so zero overlap!
+                  const rVisHigh = isLowerArc ? (s.rIn + ringThick * 0.24) : (s.rIn + ringThick * 0.77);
+                  const rVisMid  = s.rIn + ringThick * 0.50;
+                  const rVisLow  = isLowerArc ? (s.rIn + ringThick * 0.77) : (s.rIn + ringThick * 0.24);
+
+                  if (hasIco && iconPos === 'top') {
+                    const ip = polarPt(s.cx, s.cy, rVisHigh, midDeg);
+                    const isz = Math.max(4.4, Math.min(6.4, ringThick * 0.33));
+                    body += `<g transform="translate(${(ip.x - isz / 2).toFixed(2)},${(ip.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+                    const lblR = subStr ? (isLowerArc ? s.rIn + ringThick * 0.53 : s.rIn + ringThick * 0.47) : rVisLow;
+                    emitSubArcText('lbl', lblR, readLeftDeg, readRightDeg, lblStr, Math.min(5.6, ringThick * 0.27) * pf.scale, 2.9, '800', ink, pf.stack);
+                    if (subStr && ringThick >= 16) {
+                      emitSubArcText('sub', rVisLow, readLeftDeg, readRightDeg, subStr, Math.min(4.0, ringThick * 0.20) * pf.scale, 2.6, '700', segSubInk, pf.stack);
+                    }
+                  } else if (hasIco && iconPos === 'bottom') {
+                    const ip = polarPt(s.cx, s.cy, rVisLow, midDeg);
+                    const isz = Math.max(4.4, Math.min(6.4, ringThick * 0.33));
+                    body += `<g transform="translate(${(ip.x - isz / 2).toFixed(2)},${(ip.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
+                    const lblR = subStr ? rVisHigh : rVisHigh;
+                    emitSubArcText('lbl', lblR, readLeftDeg, readRightDeg, lblStr, Math.min(5.6, ringThick * 0.27) * pf.scale, 2.9, '800', ink, pf.stack);
+                    if (subStr && ringThick >= 16) {
+                      emitSubArcText('sub', rVisMid, readLeftDeg, readRightDeg, subStr, Math.min(4.0, ringThick * 0.20) * pf.scale, 2.6, '700', segSubInk, pf.stack);
+                    }
+                  } else {
+                    // Text Only ('none')
+                    const mainR = subStr ? (isLowerArc ? s.rIn + ringThick * 0.35 : s.rIn + ringThick * 0.65) : rVisMid;
+                    const subR  = isLowerArc ? s.rIn + ringThick * 0.68 : s.rIn + ringThick * 0.32;
+                    emitSubArcText('lbl', mainR, readLeftDeg, readRightDeg, lblStr, Math.min(6.4, ringThick * 0.35) * pf.scale, 3.1, '800', ink, pf.stack);
+                    if (subStr) {
+                      emitSubArcText('sub', subR, readLeftDeg, readRightDeg, subStr, Math.min(4.5, ringThick * 0.24) * pf.scale, 2.7, '700', segSubInk, pf.stack);
+                    }
+                  }
                 }
 
-                if (lblStr) {
-                  const baseArcFs = Math.max(4.0, Math.min(6.4, ringThick * (hasIco ? 0.30 : 0.36))) * pf.scale;
-                  emitArcText('lbl', s.rIn + ringThick * lblFrac, lblStr, baseArcFs, 3.1, '800', ink, pf.stack);
-                }
-
-                if (hasIco) {
-                  const ip = polarPt(s.cx, s.cy, s.rIn + ringThick * icoFrac, midDeg);
-                  const isz = Math.max(4.6, Math.min(7.2, ringThick * (lblStr ? 0.36 : 0.52)));
-                  const inner = ico.svg.replace(/currentColor/g, ink);
-                  body += `<g transform="translate(${(ip.x - isz / 2).toFixed(2)},${(ip.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${inner}</g>`;
-                }
-
+                // Configurable slider track (dot pitch + end arrows) along outer rim
                 if (isSlider) {
-                  const sMin = Number(cfg.sliderMin ?? 0);
-                  const sMax = Number(cfg.sliderMax ?? 100);
-                  const trkR = s.rIn + ringThick * trkFrac;
-                  const p1 = polarPt(s.cx, s.cy, trkR, sDeg + 3);
-                  const p2 = polarPt(s.cx, s.cy, trkR, eDeg - 3);
-                  const lg = Math.abs(eDeg - sDeg - 6) > 180 ? '1' : '0';
-                  body += `<path d="M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${trkR.toFixed(2)} ${trkR.toFixed(2)} 0 ${lg} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}" fill="none" stroke="${ink}" stroke-width="1.15" stroke-dasharray="2,1.8" opacity="0.85" pointer-events="none"/>`;
-                  if (ringThick >= 14 && arcSpan >= 52) {
-                    const rngFs = Math.max(3.2, Math.min(4.6, ringThick * 0.24)) * pf.scale;
-                    emitArcText('cue', s.rIn + ringThick * cueFrac, `${sMin}–${sMax}%`, rngFs, 2.8, '700', col.subInk, 'ui-monospace,SFMono-Regular,Consolas,monospace');
-                  }
-                } else if (ringThick >= 15.5 && arcSpan >= 58) {
-                  const cueStr = cfg.sublabel !== undefined ? String(cfg.sublabel).trim() : (isMf ? `1-${cfg.multifunc.steps || 4}•Hold` : '');
-                  if (cueStr) {
-                    const cueFs = Math.max(3.1, Math.min(4.4, ringThick * 0.23)) * pf.scale;
-                    emitArcText('cue', s.rIn + ringThick * cueFrac, cueStr, cueFs, 2.8, '700', col.subInk, pf.stack);
-                  }
+                  const trkR = s.rIn + ringThick * 0.90;
+                  body += renderSliderTrackMarkup({
+                    kind: 'arc', cx: s.cx, cy: s.cy, r: trkR, sDeg, eDeg,
+                    pitch: cfg.sliderPitch ?? facia.sliderPitch ?? 2.2,
+                    arrows: cfg.sliderArrows || facia.sliderArrows || 'chevron',
+                    color: darkPreview && isLumSeg ? LUM_INK : ink,
+                    sMin, sMax
+                  });
                 }
               } else {
-                // Ultra-narrow 10-12 slice clock segments
                 const mp = polarPt(s.cx, s.cy, (s.rIn + s.rOut) / 2, midDeg);
                 if (hasIco) {
                   const isz = Math.max(5.5, Math.min(8.5, ringThick * 0.56));
-                  const inner = ico.svg.replace(/currentColor/g, ink);
-                  body += `<g transform="translate(${(mp.x - isz / 2).toFixed(2)},${(mp.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${inner}</g>`;
+                  body += `<g transform="translate(${(mp.x - isz / 2).toFixed(2)},${(mp.y - isz / 2).toFixed(2)}) scale(${(isz / 24).toFixed(4)})" pointer-events="none">${ico.svg.replace(/currentColor/g, ink)}</g>`;
                 } else if (lblStr) {
                   const cFs = Math.max(4.4, Math.min(6.6, ringThick * 0.42)) * pf.scale;
                   body += `<text x="${mp.x.toFixed(2)}" y="${(mp.y + cFs * 0.35).toFixed(2)}" text-anchor="middle" font-family="${escXml(pf.stack)}" font-size="${cFs.toFixed(2)}" font-weight="800" fill="${ink}" pointer-events="none">${escXml(lblStr.slice(0, 4))}</text>`;
@@ -1862,14 +2074,18 @@
           if (showStencilSlots) body += `<circle class="mbx-hit" data-act="hue" data-pad-key="${s.key}" data-blanked="1" cx="${s.cx}" cy="${s.cy}" r="${rMid}" fill="none" stroke="${col.padStroke}" stroke-width="${rw}" stroke-dasharray="2 3" opacity="0.3" style="cursor:pointer"/>`;
           return;
         }
-        if (isMono || facia.sliderStyle === 'mono_ticks' || facia.sliderStyle === 'minimal') {
+        if (darkPreview) {
+          const glowR = pc.lum ? ` filter="url(#glow_${u})"` : '';
+          body += `<circle cx="${s.cx}" cy="${s.cy}" r="${s.rOut}" fill="none" stroke="${pc.stroke}" stroke-width="1.1"${glowR}/>`;
+          body += `<circle cx="${s.cx}" cy="${s.cy}" r="${s.rIn}" fill="none" stroke="${pc.stroke}" stroke-width="1.1"${glowR}/>`;
+          body += `<circle cx="${s.cx}" cy="${s.cy}" r="${rMid}" fill="none" stroke="${pc.lum ? LUM_INK : DIM_NIGHT_INK}" stroke-width="1.4" stroke-dasharray="2.4 3.0" opacity="0.85"${glowR} pointer-events="none"/>`;
+          body += `<circle class="mbx-hit" data-act="hue" data-pad-key="${s.key}" cx="${s.cx}" cy="${s.cy}" r="${rMid}" fill="none" stroke="transparent" stroke-width="${rw}" style="cursor:pointer"/>`;
+        } else if (isMono || facia.sliderStyle === 'mono_ticks' || facia.sliderStyle === 'minimal') {
           body += `<circle cx="${s.cx}" cy="${s.cy}" r="${s.rOut}" fill="none" stroke="${col.padStroke}" stroke-width="0.9"/>`;
           body += `<circle cx="${s.cx}" cy="${s.cy}" r="${s.rIn}" fill="none" stroke="${col.padStroke}" stroke-width="0.9"/>`;
           body += `<circle class="mbx-hit" data-act="hue" data-pad-key="${s.key}" cx="${s.cx}" cy="${s.cy}" r="${rMid}" fill="none" stroke="${col.ink}" stroke-width="${facia.sliderStyle === 'minimal' ? 1.5 : rw * 0.55}" ${facia.sliderStyle === 'mono_ticks' ? 'stroke-dasharray="2.2 3.2"' : ''} opacity="${facia.sliderStyle === 'minimal' ? 0.5 : 0.75}" style="cursor:pointer"/>`;
-          // Invisible wide hit ring for smooth dragging
           body += `<circle class="mbx-hit" data-act="hue" data-pad-key="${s.key}" cx="${s.cx}" cy="${s.cy}" r="${rMid}" fill="none" stroke="transparent" stroke-width="${rw}" style="cursor:pointer"/>`;
         } else {
-          // Crisp 12-hue color ring
           const cols12 = ['#ef4444','#f97316','#eab308','#84cc16','#22c55e','#14b8a6','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899','#f43f5e'];
           for (let i = 0; i < 12; i++) {
             body += `<path d="${ringWedgePath(s.cx, s.cy, s.rIn, s.rOut, i * 30, (i + 1) * 30 + 0.6)}" fill="${cols12[i]}" pointer-events="none"/>`;
@@ -1897,7 +2113,7 @@
             const rw = vert ? s.w : (s.w - gap * (n - 1)) / n;
             const rh = vert ? (s.h - gap * (n - 1)) / n : s.h;
             const isSelected = selKey === sKey;
-            body += `<rect class="mbx-seg-hit" data-seg-act="${sKey}" data-pad-key="${sKey}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${rx.toFixed(2)}" y="${ry.toFixed(2)}" width="${rw.toFixed(2)}" height="${rh.toFixed(2)}" rx="3" fill="${pc.fill}" stroke="${isSelected ? col.accent : pc.stroke}" stroke-width="${isSelected ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} style="cursor:pointer"/>`;
+            body += `<rect class="mbx-seg-hit" data-seg-act="${sKey}" data-pad-key="${sKey}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${rx.toFixed(2)}" y="${ry.toFixed(2)}" width="${rw.toFixed(2)}" height="${rh.toFixed(2)}" rx="3" fill="${pc.fill}" stroke="${isSelected ? col.accent : pc.stroke}" stroke-width="${isSelected ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''}${pc.lum ? ` filter="url(#glow_${u})"` : ''} style="cursor:pointer"/>`;
             const defL = (surfCfg.labels && surfCfg.labels[i]) || `${i + 1}`;
             if (pc.st !== 'blank') {
               const barInk = (cfg && cfg.color) || col.ink;
@@ -1908,12 +2124,16 @@
               const glyphH = isBarSlider ? Math.max(8, rh - 3.2) : rh;
               body += drawGlyphContent(rx + rw / 2, glyphCy, rw, glyphH, cfg, defL, '');
               if (isBarSlider) {
-                const trkY = iconOnBottom ? (ry + 2.4) : (ry + rh - 2.4);
+                const trkCol = darkPreview ? (isSlotLum(cfg) ? LUM_INK : DIM_NIGHT_INK) : barInk;
+                const sMinB = Number(cfg.sliderMin ?? 0), sMaxB = Number(cfg.sliderMax ?? 100);
+                const pitchB = cfg.sliderPitch ?? facia.sliderPitch ?? 2.2;
+                const arrowsB = cfg.sliderArrows || facia.sliderArrows || 'chevron';
                 if (vert && rw < rh * 0.75) {
-                  const trkX = rx + rw - 2.2;
-                  body += `<line x1="${trkX.toFixed(1)}" y1="${(ry + 3.0).toFixed(1)}" x2="${trkX.toFixed(1)}" y2="${(ry + rh - 3.0).toFixed(1)}" stroke="${barInk}" stroke-width="1.25" stroke-dasharray="2,1.6" opacity="0.85" pointer-events="none"/>`;
+                  const trkX = rx + rw - 2.5;
+                  body += renderSliderTrackMarkup({ kind: 'line', x1: trkX, y1: ry + rh - 3.2, x2: trkX, y2: ry + 3.2, pitch: pitchB, arrows: arrowsB, color: trkCol, sMin: sMinB, sMax: sMaxB });
                 } else {
-                  body += `<line x1="${(rx + 3.2).toFixed(1)}" y1="${trkY.toFixed(1)}" x2="${(rx + rw - 3.2).toFixed(1)}" y2="${trkY.toFixed(1)}" stroke="${barInk}" stroke-width="1.25" stroke-dasharray="2,1.6" opacity="0.85" pointer-events="none"/>`;
+                  const trkY = iconOnBottom ? (ry + 2.7) : (ry + rh - 2.7);
+                  body += renderSliderTrackMarkup({ kind: 'line', x1: rx + 3.0, y1: trkY, x2: rx + rw - 3.0, y2: trkY, pitch: pitchB, arrows: arrowsB, color: trkCol, sMin: sMinB, sMax: sMaxB });
                 }
               }
             }
@@ -1921,33 +2141,97 @@
           return;
         }
 
-        // Continuous Bar (not segmented)
+        // Continuous Bar (not segmented) — supports full Stencil Slider customisation (arrows, dot pitch, text, dual icons & luminous glow!)
         const cfg = pads[s.key] || {};
         const pc = padColors(cfg);
         if (pc.st === 'blank') {
           if (showStencilSlots) body += `<rect class="mbx-hit" data-act="${s.act}" data-pad-key="${s.key}" data-blanked="1" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${Math.min(s.w, s.h) / 2}" fill="none" stroke="${col.padStroke}" stroke-dasharray="2 2" opacity="0.35" style="cursor:pointer"/>`;
           return;
         }
+        const forceFactory = cfg.sliderArrows === 'factory';
+        const hasCustomLook = !forceFactory && Boolean(
+          cfg.customTrack || cfg.sliderArrows || cfg.sliderPitch !== undefined ||
+          cfg.label !== undefined || cfg.sublabel !== undefined ||
+          (cfg.icon && cfg.icon !== 'none') || (cfg.iconEnd && cfg.iconEnd !== 'none') ||
+          cfg.style || isMono || darkPreview || pc.lum
+        );
         let gradFill = pc.fill;
-        if (!isMono && facia.sliderStyle !== 'mono_ticks' && facia.sliderStyle !== 'minimal') {
+        if (!hasCustomLook && !isMono && facia.sliderStyle !== 'mono_ticks' && facia.sliderStyle !== 'minimal') {
           if (s.act === 'hue') gradFill = `url(#st_rgb_${u})`;
           else if (s.act === 'kelvin' || s.act === 'saturation') gradFill = vert ? `url(#st_cct_v_${u})` : `url(#st_cct_${u})`;
           else gradFill = vert ? `url(#st_bri_v_${u})` : `url(#st_bri_h_${u})`;
+        } else if (forceFactory && darkPreview) {
+          gradFill = pc.fill;
         }
         const rad = Math.min(6, Math.min(s.w, s.h) / 2);
-        body += `<rect class="mbx-hit" data-act="${s.act}" ${s.zone !== undefined ? `data-zone="${s.zone}"` : ''} data-pad-key="${s.key}" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${rad}" fill="${gradFill}" stroke="${col.padStroke}" stroke-width="0.95" style="cursor:pointer"/>`;
-        // Graduated ticks for monochrome/minimal clarity
-        const steps = 6;
-        for (let t = 1; t < steps; t++) {
+        const glowBar = pc.lum ? ` filter="url(#glow_${u})"` : '';
+        const barStroke = selKey === s.key ? col.accent : pc.stroke;
+        body += `<rect class="mbx-hit" data-act="${s.act}" ${s.zone !== undefined ? `data-zone="${s.zone}"` : ''} data-pad-key="${s.key}" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${rad}" fill="${gradFill}" stroke="${barStroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}"${glowBar} style="cursor:pointer"/>`;
+
+        if (hasCustomLook) {
+          const trkCol = darkPreview ? (pc.lum ? LUM_INK : DIM_NIGHT_INK) : ((cfg && cfg.color) || col.ink);
+          const inkV = darkPreview ? (pc.lum ? LUM_CORE : DIM_NIGHT_INK) : ((cfg && cfg.color) || col.ink);
+          const subInkV = darkPreview ? (pc.lum ? LUM_INK : DIM_NIGHT_INK) : col.subInk;
+          const pitchU = cfg.sliderPitch ?? facia.sliderPitch ?? 2.2;
+          const arrowsU = (cfg.sliderArrows && cfg.sliderArrows !== 'factory') ? cfg.sliderArrows : (facia.sliderArrows || 'chevron');
+          const sMinU = Number(cfg.sliderMin ?? 0), sMaxU = Number(cfg.sliderMax ?? 100);
+          const glowTxt = (darkPreview && pc.lum) ? ` filter="url(#glow_${u})"` : '';
+
           if (vert) {
-            const ty = s.y + (t * s.h) / steps;
-            body += `<line x1="${s.x + 3}" y1="${ty.toFixed(1)}" x2="${s.x + s.w - 3}" y2="${ty.toFixed(1)}" stroke="${isMono ? col.ink : '#ffffff'}" stroke-opacity="0.55" stroke-width="0.8" pointer-events="none"/>`;
+            const hasTextOrIco = Boolean(cfg.label !== undefined || cfg.sublabel !== undefined || (cfg.icon && cfg.icon !== 'none') || (cfg.iconEnd && cfg.iconEnd !== 'none'));
+            const trkX = hasTextOrIco ? (s.x + s.w - 2.7) : (s.x + s.w / 2);
+            body += renderSliderTrackMarkup({ kind: 'line', x1: trkX, y1: s.y + s.h - 3.8, x2: trkX, y2: s.y + 3.8, pitch: pitchU, arrows: arrowsU, color: trkCol, sMin: sMinU, sMax: sMaxU });
+
+            if (hasTextOrIco) {
+              const rawPosU = cfg.iconPos || 'both';
+              const topIcoKey = (rawPosU === 'both') ? (cfg.iconEnd || cfg.icon || 'sun') : ((rawPosU === 'top' || rawPosU === 'right') ? (cfg.icon || 'none') : 'none');
+              const botIcoKey = (rawPosU === 'both') ? (cfg.icon || 'moon') : ((rawPosU === 'bottom' || rawPosU === 'left') ? (cfg.icon || 'none') : 'none');
+              const icoTop = FACIA_ICONS[topIcoKey], icoBot = FACIA_ICONS[botIcoKey];
+              const iszV = Math.max(4.6, Math.min(7.6, (s.w - 3.2) * 0.62));
+              const cxV = s.x + (s.w - 3.2) / 2;
+              let gInner = '';
+              if (icoTop && icoTop.svg) {
+                gInner += `<g transform="translate(${(cxV - iszV / 2).toFixed(2)},${(s.y + 5.0).toFixed(2)}) scale(${(iszV / 24).toFixed(4)})" pointer-events="none">${icoTop.svg.replace(/currentColor/g, inkV)}</g>`;
+              }
+              if (icoBot && icoBot.svg) {
+                gInner += `<g transform="translate(${(cxV - iszV / 2).toFixed(2)},${(s.y + s.h - iszV - 5.0).toFixed(2)}) scale(${(iszV / 24).toFixed(4)})" pointer-events="none">${icoBot.svg.replace(/currentColor/g, inkV)}</g>`;
+              }
+              const vLbl = cfg.label !== undefined ? String(cfg.label).trim() : '';
+              const vSub = cfg.sublabel !== undefined ? String(cfg.sublabel).trim() : (vLbl ? `${sMinU}\u2192${sMaxU}%` : '');
+              const pfV = resolvePadFont(cfg);
+              const availRotW = Math.max(14, s.h - (icoTop && icoTop.svg ? iszV + 7 : 5) - (icoBot && icoBot.svg ? iszV + 7 : 5));
+              const cyV = s.y + s.h / 2;
+              if (vLbl) {
+                const fitL = fitText(vLbl, availRotW, Math.min(5.5, (s.w - 3.5) * 0.46) * pfV.scale, 2.9, pfV.charFactor);
+                const xOff = vSub ? (cxV - 1.5) : cxV;
+                gInner += `<text transform="translate(${xOff.toFixed(2)},${cyV.toFixed(2)}) rotate(-90)" text-anchor="middle" dy="0.34em" font-family="${escXml(pfV.stack)}" font-size="${fitL.fs.toFixed(2)}" font-weight="800" fill="${inkV}" pointer-events="none">${escXml(fitL.text)}</text>`;
+              }
+              if (vSub && s.w >= 12) {
+                const fitS = fitText(vSub, availRotW, Math.min(3.9, (s.w - 3.5) * 0.33) * pfV.scale, 2.5, pfV.charFactor);
+                gInner += `<text transform="translate(${(cxV + 2.4).toFixed(2)},${cyV.toFixed(2)}) rotate(-90)" text-anchor="middle" dy="0.34em" font-family="${escXml(pfV.stack)}" font-size="${fitS.fs.toFixed(2)}" font-weight="700" fill="${subInkV}" pointer-events="none">${escXml(fitS.text)}</text>`;
+              }
+              body += glowTxt ? `<g${glowTxt}>${gInner}</g>` : gInner;
+            }
           } else {
-            const tx = s.x + (t * s.w) / steps;
-            body += `<line x1="${tx.toFixed(1)}" y1="${s.y + 3}" x2="${tx.toFixed(1)}" y2="${s.y + s.h - 3}" stroke="${isMono ? col.ink : '#ffffff'}" stroke-opacity="0.55" stroke-width="0.8" pointer-events="none"/>`;
+            const trkY = s.y + s.h - 2.6;
+            body += renderSliderTrackMarkup({ kind: 'line', x1: s.x + 3.8, y1: trkY, x2: s.x + s.w - 3.8, y2: trkY, pitch: pitchU, arrows: arrowsU, color: trkCol, sMin: sMinU, sMax: sMaxU });
+            if (cfg.label !== undefined || cfg.sublabel !== undefined || (cfg.icon && cfg.icon !== 'none') || (cfg.iconEnd && cfg.iconEnd !== 'none')) {
+              body += drawGlyphContent(s.x + s.w / 2, s.y + (s.h - 2.6) / 2, s.w, s.h - 2.8, Object.assign({ segmentMode: 'slider' }, cfg), '', '');
+            }
+          }
+        } else {
+          const steps = 6;
+          const tickCol = darkPreview ? (pc.lum ? LUM_INK : DIM_NIGHT_INK) : (isMono ? col.ink : '#ffffff');
+          for (let t = 1; t < steps; t++) {
+            if (vert) {
+              const ty = s.y + (t * s.h) / steps;
+              body += `<line x1="${s.x + 3}" y1="${ty.toFixed(1)}" x2="${s.x + s.w - 3}" y2="${ty.toFixed(1)}" stroke="${tickCol}" stroke-opacity="0.6" stroke-width="0.8" pointer-events="none"/>`;
+            } else {
+              const tx = s.x + (t * s.w) / steps;
+              body += `<line x1="${tx.toFixed(1)}" y1="${s.y + 3}" x2="${tx.toFixed(1)}" y2="${s.y + s.h - 3}" stroke="${tickCol}" stroke-opacity="0.6" stroke-width="0.8" pointer-events="none"/>`;
+            }
           }
         }
-        if (cfg.icon || cfg.label) body += drawGlyphContent(s.x + s.w / 2, s.y + s.h / 2, s.w, s.h, cfg, '', '');
         if (selKey === s.key) body += selRingRect(s.x, s.y, s.w, s.h, rad);
         return;
       }
@@ -1972,12 +2256,13 @@
         const cfg = pads[s.key] || {};
         const pc = padColors(cfg);
         const z = s.zone ?? 1;
+        const glowRocker = pc.lum ? ` filter="url(#glow_${u})"` : '';
+        const pipInk = darkPreview ? (pc.lum ? LUM_INK : DIM_NIGHT_INK) : col.subInk;
         body += `<g data-pad-key="${s.key}">
-          <rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.rx || 5}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}"/>`;
+          <rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.rx || 5}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}"${glowRocker}/>`;
         if (pc.st !== 'blank') {
-          // Subtle top '|' and bottom 'o' rocker pips + room icon/name in center
-          body += `<line x1="${(s.x + s.w / 2).toFixed(1)}" y1="${(s.y + 4.5).toFixed(1)}" x2="${(s.x + s.w / 2).toFixed(1)}" y2="${(s.y + 9).toFixed(1)}" stroke="${col.subInk}" stroke-width="1.2" stroke-linecap="round" pointer-events="none"/>`;
-          body += `<circle cx="${(s.x + s.w / 2).toFixed(1)}" cy="${(s.y + s.h - 6.8).toFixed(1)}" r="2.3" fill="none" stroke="${col.subInk}" stroke-width="1.0" pointer-events="none"/>`;
+          body += `<line x1="${(s.x + s.w / 2).toFixed(1)}" y1="${(s.y + 4.5).toFixed(1)}" x2="${(s.x + s.w / 2).toFixed(1)}" y2="${(s.y + 9).toFixed(1)}" stroke="${pipInk}" stroke-width="1.2" stroke-linecap="round" pointer-events="none"/>`;
+          body += `<circle cx="${(s.x + s.w / 2).toFixed(1)}" cy="${(s.y + s.h - 6.8).toFixed(1)}" r="2.3" fill="none" stroke="${pipInk}" stroke-width="1.0" pointer-events="none"/>`;
           body += drawGlyphContent(s.x + s.w / 2, s.y + s.h / 2, s.w * 0.92, s.h * 0.56, cfg, s.label, s.sublabel || '');
         }
         body += `<rect class="mbx-hit" data-act="zone_on" data-zone="${z}" data-pad-key="${s.key}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${s.x}" y="${s.y}" width="${s.w}" height="${(s.h * 0.5).toFixed(1)}" fill="transparent" style="cursor:pointer"/>`;
@@ -1991,7 +2276,8 @@
       const pc = padColors(cfg);
       const zAttr = (s.zone !== undefined && s.zone !== null) ? `data-zone="${s.zone}"` : '';
       const vAttr = (s.val !== undefined && s.val !== null) ? `data-val="${s.val}"` : '';
-      body += `<rect class="mbx-hit" data-act="${s.act}" ${zAttr} ${vAttr} data-pad-key="${s.key}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.rx || 4}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}" style="cursor:pointer"/>`;
+      const glowRect = pc.lum ? ` filter="url(#glow_${u})"` : '';
+      body += `<rect class="mbx-hit" data-act="${s.act}" ${zAttr} ${vAttr} data-pad-key="${s.key}" ${pc.st === 'blank' ? 'data-blanked="1"' : ''} x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.rx || 4}" fill="${pc.fill}" stroke="${selKey === s.key ? col.accent : pc.stroke}" stroke-width="${selKey === s.key ? 1.9 : 1.0}" ${pc.dash ? `stroke-dasharray="${pc.dash}"` : ''} opacity="${pc.op}"${glowRect} style="cursor:pointer"/>`;
       if (pc.st !== 'blank') {
         body += drawGlyphContent(s.x + s.w / 2, s.y + s.h / 2, s.w, s.h, cfg, s.label, s.sublabel || '');
       }
@@ -2075,7 +2361,7 @@
       ];
     }
 
-    // 2. 8-ZONE B8: Standardized 8-Room Icons + Segmented Device Ring / Sliders!
+    // 2. 8-ZONE B8: Standardised 8-Room Icons + Segmented Device Ring / Sliders!
     if (m.layout === 'b8') {
       return [
         {
@@ -2093,12 +2379,13 @@
             panelTitle: 'HYBRID SLIDER STUDIO', defaultPadStyle: 'keycap', showLedPinhole: true, hideLogo: true,
             luminous: { enabled: true, border: true, header: true, slots: false },
             pads: {
-              hue_seg_1: { icon: 'blinds',     iconPos: 'top',    label: 'Blinds',  segmentMode: 'slider', sliderMin: 100, sliderMax: 0, luminous: true },
-              hue_seg_2: { icon: 'fan',        iconPos: 'top',    label: 'Fan Spd', segmentMode: 'slider', sliderMin: 0,   sliderMax: 100, luminous: true },
-              hue_seg_3: { icon: 'ac',         iconPos: 'bottom', label: 'Climate', multifunc: { enabled: true, steps: 5, unit: 'Temp' } },
-              hue_seg_4: { icon: 'tv',         iconPos: 'bottom', label: 'Cinema',  sublabel: 'Toggle' },
-              sat_seg_1: { icon: 'sun',        iconPos: 'top',    label: 'Dimmer',  segmentMode: 'slider', sliderMin: 15,  sliderMax: 100 },
-              sat_seg_2: { icon: 'coffee',     iconPos: 'top',    label: 'Warmth',  segmentMode: 'slider', sliderMin: 0,   sliderMax: 100 },
+              hue_seg_1: { icon: 'blinds',     iconEnd: 'sun',    iconPos: 'both',  label: 'Blinds',  sublabel: '100→0% Slide', segmentMode: 'slider', sliderMin: 100, sliderMax: 0, sliderPitch: 2.2, sliderArrows: 'chevron', luminous: true },
+              hue_seg_2: { icon: 'fan',        iconEnd: 'sparkles', iconPos: 'both', label: 'Fan Spd', sublabel: '0→100% Slide', segmentMode: 'slider', sliderMin: 0,   sliderMax: 100, sliderPitch: 1.5, sliderArrows: 'triangle', luminous: true },
+              hue_seg_3: { icon: 'ac',         iconPos: 'left',   label: 'Climate', sublabel: '1-5 • Hold', multifunc: { enabled: true, steps: 5, unit: 'Temp' } },
+              hue_seg_4: { icon: 'tv',         iconPos: 'right',  label: 'Cinema',  sublabel: 'Tap Toggle' },
+              sat_seg_1: { icon: 'sun',        iconPos: 'top',    label: 'Dimmer',  segmentMode: 'slider', sliderMin: 15,  sliderMax: 100, sliderPitch: 2.0, sliderArrows: 'dots', luminous: true },
+              sat_seg_2: { icon: 'coffee',     iconPos: 'top',    label: 'Warmth',  segmentMode: 'slider', sliderMin: 0,   sliderMax: 100, sliderPitch: 2.6, sliderArrows: 'ticks' },
+              bri_bar:   { customTrack: true, icon: 'moon', iconEnd: 'sun', iconPos: 'both', label: 'Master Dim', sublabel: '5\u2192100%', segmentMode: 'slider', sliderMin: 5, sliderMax: 100, sliderPitch: 2.0, sliderArrows: 'chevron', luminous: true },
               center_w:  { icon: 'downlight',  iconPos: 'top',    label: 'Main W' },
               btn_on:    { icon: 'power',      iconPos: 'top',    label: 'ON', luminous: true },
               btn_off:   { icon: 'moon',       iconPos: 'top',    label: 'OFF' },
@@ -2120,8 +2407,8 @@
         },
         {
           id: 'b8_whole_home_devices',
-          name: '8-Room Standardized Icons + 6-Device Segmented Wheel',
-          desc: 'Zones 1-8 mapped to standardized rooms; Color Ring segmented into Fan (1-6), Blinds, Curtains, AC, Sonos & Strip',
+          name: '8-Room Standardised Icons + 6-Device Segmented Wheel',
+          desc: 'Zones 1-8 mapped to standardised rooms; Colour Ring segmented into Fan (1-6), Blinds, Curtains, AC, Sonos & Strip',
           touch_zones: {
             hue_ring: { enabled: true, segments: 6, offset_deg: -30, zone_mask: 65535, labels: ['Fan','Blinds','Curtains','AC','Audio','Strip'] },
             sat_bar:  { enabled: true, segments: 3, offset_deg: 0,   zone_mask: 65535, labels: ['Day','Relax','Cinema'] },
@@ -2161,7 +2448,7 @@
         },
         {
           id: 'b8_rooms_analog',
-          name: '8-Room Standardized Lighting (Continuous Wheel & Sliders)',
+          name: '8-Room Standardised Lighting (Continuous Wheel & Sliders)',
           desc: 'Keeps analog Color Wheel & Dimmer sliders while adding crisp Room Icons to Zones 1-8',
           touch_zones: {
             hue_ring: { enabled: false, segments: 6, offset_deg: 0, zone_mask: 65535, labels: ['','','','','',''] },
@@ -2189,7 +2476,59 @@
       ];
     }
 
-    // 3. STRIP / MULTI-ZONE PANELS (B1..B4, U1..U3, M4, B5): Standardized Room Rockers + Segmented Multi-Device Bars!
+    // 2b. K-SERIES ROTARY / COMPACT DIALS (K6 / K6B / K1 / FUT087): Dedicated Ring-Arc + Center Pad Templates!
+    if (/^k/i.test(m.id) || m.layout === 'k6' || m.kind === 'k6' || (m.zones === 1 && m.layout !== 'b0' && (!m.width_mm || m.width_mm <= 76))) {
+      return [
+        {
+          id: 'k6_hybrid_quadrant_sliders',
+          name: 'Hybrid 4-Quadrant Ring Sliders + Multi-Step (K6)',
+          desc: 'Splits the K6 touch ring into 2 curved Variable Sliders (Dimmer 10→100%, Blinds 100→0%) + 2 Tap/Step pads (Fan 1-5, Cinema)',
+          touch_zones: {
+            hue_ring: { enabled: true, segments: 4, offset_deg: -45, zone_mask: 65535, labels: ['Dimmer','Fan','Blinds','Cinema'] },
+            sat_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] },
+            bri_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] },
+            cct_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] }
+          },
+          facia: {
+            enabled: true, theme: defTheme, fontFamily: 'geometric', fontScale: 105,
+            panelTitle: 'K6 SMART DIAL', defaultPadStyle: 'keycap', showLedPinhole: true, hideLogo: true,
+            luminous: { enabled: true, border: true, header: true, slots: false },
+            pads: {
+              hue_seg_1: { icon: 'moon',     iconEnd: 'sun',      iconPos: 'both',  label: 'Dimmer', sublabel: '10→100%', segmentMode: 'slider', sliderMin: 10, sliderMax: 100, sliderPitch: 2.0, sliderArrows: 'chevron', luminous: true },
+              hue_seg_2: { icon: 'fan',      iconPos: 'left',     label: 'Fan',    sublabel: '1-5 • Hold', multifunc: { enabled: true, steps: 5, unit: 'Spd' } },
+              hue_seg_3: { icon: 'blinds',   iconEnd: 'sun',      iconPos: 'both',  label: 'Blinds', sublabel: '100→0%', segmentMode: 'slider', sliderMin: 100, sliderMax: 0, sliderPitch: 2.2, sliderArrows: 'triangle', luminous: true },
+              hue_seg_4: { icon: 'tv',       iconPos: 'right',    label: 'Cinema', sublabel: 'Toggle' },
+              center_w:  { icon: 'power',    iconPos: 'top',      label: 'Master', sublabel: 'Tap / Hold', luminous: true },
+              btn_on:    { icon: 'power',    iconPos: 'top',      label: 'ON', luminous: true }
+            }
+          }
+        },
+        {
+          id: 'k6_six_device_dial',
+          name: '6-Device Smart Room Ring (Fan / Blinds / AC / Sonos / Lights)',
+          desc: 'Turns K6 ring into 6 dedicated room device buttons with Step-Cycle & Hold toggle',
+          touch_zones: {
+            hue_ring: { enabled: true, segments: 6, offset_deg: -30, zone_mask: 65535, labels: ['Lights','Fan','Blinds','AC','Sonos','Scene'] },
+            sat_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] },
+            bri_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] },
+            cct_bar:  { enabled: false, segments: 2, offset_deg: 0, zone_mask: 65535, labels: ['',''] }
+          },
+          facia: {
+            enabled: true, theme: defTheme, panelTitle: 'STUDIO DIAL', defaultPadStyle: 'keycap', showLedPinhole: true, hideLogo: true,
+            pads: {
+              hue_seg_1: { icon: 'bulb',     iconPos: 'top', label: 'Lights', multifunc: { enabled: true, steps: 4, unit: 'Bri' } },
+              hue_seg_2: { icon: 'fan',      iconPos: 'top', label: 'Fan',    multifunc: { enabled: true, steps: 5, unit: 'Spd' } },
+              hue_seg_3: { icon: 'blinds',   iconPos: 'top', label: 'Blinds', multifunc: { enabled: true, steps: 4, unit: 'Pos' } },
+              hue_seg_4: { icon: 'ac',       iconPos: 'top', label: 'AC',     multifunc: { enabled: true, steps: 4, unit: 'Temp' } },
+              hue_seg_5: { icon: 'speaker',  iconPos: 'top', label: 'Sonos',  multifunc: { enabled: true, steps: 5, unit: 'Vol' } },
+              hue_seg_6: { icon: 'sparkles', iconPos: 'top', label: 'Scene' }
+            }
+          }
+        }
+      ];
+    }
+
+    // 3. STRIP / MULTI-ZONE PANELS (B1..B4, U1..U3, M4, B5): Standardised Room Rockers + Segmented Multi-Device Bars!
     const topSurf = (m.kind === 'b1' || m.kind === 'u1') ? 'bri_bar' : (m.kind === 'b2' || m.kind === 'u2') ? 'cct_bar' : 'hue_ring';
     const segPref = topSurf === 'bri_bar' ? 'bri_seg_' : topSurf === 'cct_bar' ? 'cct_seg_' : 'hue_seg_';
     return [
@@ -2207,8 +2546,8 @@
           enabled: true, theme: defTheme, fontFamily: 'sans', fontScale: 105,
           panelTitle: 'DUAL LINEAR SLIDERS', defaultPadStyle: 'keycap', showLedPinhole: true, hideLogo: true,
           pads: {
-            [segPref + '1']: { icon: 'curtains', iconPos: 'top', label: 'Sheer',    segmentMode: 'slider', sliderMin: 0,   sliderMax: 100 },
-            [segPref + '2']: { icon: 'blinds',   iconPos: 'top', label: 'Blockout', segmentMode: 'slider', sliderMin: 100, sliderMax: 0 },
+            [segPref + '1']: { icon: 'curtains', iconEnd: 'sun', iconPos: 'both',   label: 'Sheer',    sublabel: '0→100% Slide', segmentMode: 'slider', sliderMin: 0,   sliderMax: 100 },
+            [segPref + '2']: { icon: 'moon',     iconEnd: 'blinds', iconPos: 'both', label: 'Blockout', sublabel: '100→0% Drop',  segmentMode: 'slider', sliderMin: 100, sliderMax: 0 },
             zone_0: { icon: 'home_all', label: 'All' },
             zone_1: { icon: 'sofa',     label: 'Living' },
             zone_2: { icon: 'kitchen',  label: 'Kitchen' },
@@ -2220,7 +2559,7 @@
       {
         id: 'strip_rooms_plus_devices',
         name: 'Room Rockers + 4-Device Segmented Bar (Fan/Blinds/AC/Audio)',
-        desc: 'Top touch strip becomes 4 multi-function device pads (Tap = Step 1-6, Hold = Toggle); bottom rockers use standardized Room Icons',
+        desc: 'Top touch strip becomes 4 multi-function device pads (Tap = Step 1-6, Hold = Toggle); bottom rockers use standardised Room Icons',
         touch_zones: {
           hue_ring: { enabled: topSurf === 'hue_ring', segments: 4, offset_deg: 0, zone_mask: 65535, labels: ['Fan','Blinds','AC','Audio'] },
           cct_bar:  { enabled: topSurf === 'cct_bar',  segments: 4, offset_deg: 0, zone_mask: 65535, labels: ['Fan','Blinds','AC','Audio'] },
@@ -2279,6 +2618,37 @@
       return FACTORY_MODELS.find(f => f.id === m.baseModel) || m;
     }
     return m;
+  }
+
+  function upsertCustomModel(cm) {
+    if (!cm || !cm.id) return null;
+    const bId = cm.base_model || cm.baseModel || 'B8';
+    const base = FACTORY_MODELS.find(f => f.id === bId) || FACTORY_MODELS[0];
+    const existingIdx = MODELS.findIndex(x => x.id === cm.id);
+    if (existingIdx !== -1) MODELS.splice(existingIdx, 1);
+    const entry = {
+      id: cm.id,
+      base: base.base || base.id,
+      baseModel: base.id,
+      finish: base.finish || 'white',
+      cat: 'custom',
+      baseCat: base.cat,
+      proto: base.proto,
+      zones: base.zones,
+      layout: base.layout,
+      kind: base.kind,
+      name: cm.name || `${base.id} Custom`,
+      sub: cm.is_draft ? `WIP Draft ${base.id} (${base.zones}Z)` : `Custom ${base.id} (${base.zones}Z)`,
+      readonly: false,
+      isCustom: true,
+      isDraft: Boolean(cm.is_draft),
+      stencilMode: cm.stencil_mode || 'full_panel',
+      facia: cm.facia || null,
+      touchZones: cm.touch_zones || null,
+      suggestedBindings: cm.suggested_bindings || null
+    };
+    MODELS.unshift(entry);
+    return entry;
   }
 
   function registerCustomModels(rawList) {
@@ -2378,10 +2748,13 @@
     }
   })();
 
-  // Auto-hydrate custom models if loaded inside a browser pointing at Hub
-  if (typeof fetch === 'function' && typeof document !== 'undefined') {
-    const curScript = document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href).origin : '';
-    syncCustomModelsFromHub(curScript);
+  // Auto-hydrate custom models only when served directly from the ESP32 Hub (skip HA :8123 / HB UI :8581)
+  if (typeof fetch === 'function' && typeof document !== 'undefined' && typeof location !== 'undefined') {
+    const isHaOrHbShell = location.port === '8123' || location.port === '8581' || /milight_remote_studio|custom_components|homebridge/i.test(location.pathname + (document.currentScript && document.currentScript.src || ''));
+    if (!isHaOrHbShell) {
+      const curScript = document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href).origin : '';
+      syncCustomModelsFromHub(curScript);
+    }
   }
 
   root.MiBoxerCatalog = {
@@ -2397,6 +2770,7 @@
     renderCutStickerSheetSvg,
     resolveBaseModel,
     registerCustomModels,
+    upsertCustomModel,
     syncCustomModelsFromHub,
     resolveBaseHardwareId,
     areModelsPhysicallyCompatible,
